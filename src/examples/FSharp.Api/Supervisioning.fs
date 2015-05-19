@@ -23,23 +23,31 @@ let main() =
     printf "\n=== Supervisiors example ===\n"
     use system = System.create "system" (Configuration.defaultConfig())
     // create parent actor to watch over jobs delegated to it's child
-    let parent = 
-        spawnOpt system "parent" 
+    let parent =
+        spawnOpt system
+            // define supervision strategy
+            <| [ SpawnOption.SupervisorStrategy (
+                    // restart on Custom Exception, default behavior on all other exception types
+                    Strategy.OneForOne(fun e ->
+                    match e with
+                    | :? CustomException -> Directive.Restart
+                    | _ -> SupervisorStrategy.DefaultDecider(e)))  ]
+            <| "parent"
             <| fun parentMailbox ->
                 // define child actor
-                let child = 
+                let child =
                     spawn parentMailbox "child" <| fun childMailbox ->
                         childMailbox.Defer (fun () -> printfn "Child stopping")
                         printfn "Child started"
-                        let rec childLoop() = 
+                        let rec childLoop() =
                             actor {
                                 let! msg = childMailbox.Receive()
                                 match msg with
-                                | Echo info -> 
+                                | Echo info ->
                                     // respond to original sender
                                     let response = "Child " + (childMailbox.Self.Path.ToStringWithAddress()) + " received: "  + info
                                     childMailbox.Sender() <! response
-                                | Crash -> 
+                                | Crash ->
                                     // log crash request and crash
                                     printfn "Child %A received crash order" (childMailbox.Self.Path)
                                     raise (CustomException())
@@ -54,21 +62,14 @@ let main() =
                         return! parentLoop()
                     }
                 parentLoop()
-            // define supervision strategy
-            <| [ SpawnOption.SupervisorStrategy (
-                    // restart on Custom Exception, default behavior on all other exception types
-                    Strategy.OneForOne(fun e ->
-                    match e with
-                    | :? CustomException -> Directive.Restart 
-                    | _ -> SupervisorStrategy.DefaultDecider(e)))  ]
-                        
+
     async {
         let! response = parent <? Echo "hello world"
         printfn "%s" response
         // after this one child should crash
         parent <! Crash
         System.Threading.Thread.Sleep 200
-        
+
         // actor should be restarted
         let! response = parent <? Echo "hello world2"
         printfn "%s" response

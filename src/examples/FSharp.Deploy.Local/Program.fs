@@ -10,21 +10,21 @@ open Akka.Actor
 
 // the most basic configuration of remote actor system
 let config = """
-akka {  
+akka {
     actor {
         provider = "Akka.Remote.RemoteActorRefProvider, Akka.Remote"
-    }    
+    }
     remote.helios.tcp {
         transport-protocol = tcp
         port = 0                    # get first available port
-        hostname = 0.0.0.0          
+        hostname = 0.0.0.0
     }
 }
 """
 
 // create remote deployment configuration for actor system available under `actorPath`
-let remoteDeploy systemPath = 
-    let address = 
+let remoteDeploy systemPath =
+    let address =
         match ActorPath.TryParseAddress systemPath with
         | false, _ -> failwith "ActorPath address cannot be parsed"
         | true, a -> a
@@ -37,33 +37,33 @@ let REQ = 1
 let RES = 2
 
 [<EntryPoint>]
-let main _ = 
+let main _ =
     System.Console.Title <- "Local: " + System.Diagnostics.Process.GetCurrentProcess().Id.ToString()
-    // remote system address according to settings provided 
+    // remote system address according to settings provided
     // in FSharp.Deploy.Remote configuration
     let remoteSystemAddress = "akka.tcp://remote-system@localhost:7000"
     use system = System.create "local-system" (Configuration.parse config)
-    
+
     // spawn actor remotelly on remote-system location
-    let remoter = 
-        // as long as actor receive logic is serializable F# Expr, there is no need for sharing any assemblies 
+    let remoter =
+        // as long as actor receive logic is serializable F# Expr, there is no need for sharing any assemblies
         // all code will be serialized, deployed to remote system and there compiled and executed
-        spawne system "remote" 
-            <@ 
-                fun mailbox -> 
-                let rec loop(): Cont<int * string, unit> = 
-                    actor { 
+        spawne system [ SpawnOption.Deploy(remoteDeploy remoteSystemAddress) ] "remote"
+            <@
+                fun mailbox ->
+                let rec loop(): Cont<int * string, unit> =
+                    actor {
                         let! msg = mailbox.Receive()
                         match msg with
-                        | (REQ, m) -> 
+                        | (REQ, m) ->
                             printfn "Remote actor received: %A" m
                             mailbox.Sender() <! (RES, "ECHO " + m)
                         | _ -> logErrorf mailbox "Received unexpected message: %A" msg
                         return! loop()
                     }
-                loop() 
-             @> [ SpawnOption.Deploy(remoteDeploy remoteSystemAddress) ]
-    async { 
+                loop()
+             @>
+    async {
         let! msg = remoter <? (REQ, "hello")
         match msg with
         | (RES, m) -> printfn "Remote actor responded: %s" m
