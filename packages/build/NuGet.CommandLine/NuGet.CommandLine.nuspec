@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>NuGet.CommandLine</id>
+    <version>2.8.6</version>
+    <authors>.NET Foundation</authors>
+    <owners>Outercurve Foundation</owners>
+    <licenseUrl>http://www.microsoft.com/web/webpi/eula/nuget_release_eula.htm</licenseUrl>
+    <projectUrl>https://github.com/NuGet/NuGet2</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>NuGet Command Line Tool</description>
+    <copyright>© Outercurve Foundation. All rights reserved.</copyright>
+  </metadata>
+</package>
