@@ -30,7 +30,7 @@ namespace Akka.Eventsourced
                 onLast(last);
         }
 
-        private void Persist<T>(T e, Handler<T> handler, IImmutableSet<string> customDestinationAggregateIds = null)
+        public void Persist<T>(T e, Handler<T> handler, IImmutableSet<string> customDestinationAggregateIds = null)
         {
             writeRequests = writeRequests.Add(DurableEvent(e, customDestinationAggregateIds ?? ImmutableHashSet<string>.Empty));
             writeHandlers = writeHandlers.Add(result => handler(result.IsSuccess ? Result.Success((T)Convert.ChangeType(result.Value, typeof(T))) : Result.Failure<T>(result.Exception)));

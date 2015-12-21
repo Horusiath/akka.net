@@ -57,8 +57,8 @@
     <Compile Include="CRDT\Counter.cs" />
     <Compile Include="CRDT\CRDTService.cs" />
     <Compile Include="CRDT\ISerializableCRDT.cs" />
-    <Compile Include="CRDT\LwwRegister.cs" />
-    <Compile Include="CRDT\MvRegister.cs" />
+    <Compile Include="CRDT\LastWriteWinsRegister.cs" />
+    <Compile Include="CRDT\MultiValueRegister.cs" />
     <Compile Include="CRDT\OrSet.cs" />
     <Compile Include="DurableEvent.cs" />
     <Compile Include="EventsourcedActor.cs" />

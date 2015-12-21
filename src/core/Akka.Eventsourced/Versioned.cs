@@ -9,7 +9,7 @@ namespace Akka.Eventsourced
     /// <summary>
     /// A versioned value of type <typeparamref name="TValue"/>.
     /// </summary>
-    public struct Versioned<TValue>
+    public struct Versioned<TValue> : IEquatable<Versioned<TValue>>
     {
         public readonly TValue Value;
         public readonly VectorTime UpdateTimestamp;
@@ -26,6 +26,30 @@ namespace Akka.Eventsourced
             Value = value;
             UpdateTimestamp = updateTimestamp;
             Creator = creator ?? string.Empty;
+        }
+
+        public bool Equals(Versioned<TValue> other)
+        {
+            return Equals(Creator, other.Creator)
+                   && Equals(Value, other.Value)
+                   && Equals(UpdateTimestamp, other.UpdateTimestamp);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Versioned<TValue>) return Equals((Versioned<TValue>) obj);
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = EqualityComparer<TValue>.Default.GetHashCode(Value);
+                hashCode = (hashCode * 397) ^ UpdateTimestamp.GetHashCode();
+                hashCode = (hashCode * 397) ^ Creator.GetHashCode();
+                return hashCode;
+            }
         }
     }
 
