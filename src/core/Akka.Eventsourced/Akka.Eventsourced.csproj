@@ -64,13 +64,15 @@
     <Compile Include="EventsourcedActor.cs" />
     <Compile Include="EventsourcedProtocol\EventsourcedProtocol.cs" />
     <Compile Include="EventsourcedView.cs" />
+    <Compile Include="Logs\EventLog.cs" />
+    <Compile Include="Logs\EventLog.Messages.cs" />
+    <Compile Include="Logs\IEventLogStorageProvider.cs" />
     <Compile Include="Replicator.cs" />
     <Compile Include="IReplicationFilter.cs" />
-    <Compile Include="Logs\BatchingEventLog.cs" />
+    <Compile Include="Logs\BatchingLayer.cs" />
     <Compile Include="Logs\ChunkedEventReplay.cs" />
     <Compile Include="Logs\NotificationChannel.cs" />
     <Compile Include="Logs\SubscriberRegistry.cs" />
-    <Compile Include="Logs\TimeTracker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Recovery.cs" />
     <Compile Include="ReplicationConnection.cs" />

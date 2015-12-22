@@ -1,12 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Akka.Actor;
 using Akka.Eventsourced.Logs;
 
 namespace Akka.Eventsourced.ReplicationProtocol
 {
     public interface IReplicationSerializable { }
+
+    [Serializable]
+    public struct LogInfo : IReplicationSerializable
+    {
+        public readonly string LogName;
+        public readonly long SequenceNr;
+
+        public LogInfo(string logName, long sequenceNr)
+        {
+            LogName = logName;
+            SequenceNr = sequenceNr;
+        }
+    }
 
     [Serializable]
     public struct ReplicationEndpointInfo : IReplicationSerializable
@@ -17,22 +31,32 @@ namespace Akka.Eventsourced.ReplicationProtocol
         }
 
         public readonly string EndpointId;
-        public readonly IImmutableSet<string> LogNames;
+        public readonly IImmutableSet<LogInfo> LogInfos;
 
-        public ReplicationEndpointInfo(string endpointId, IImmutableSet<string> logNames) : this()
+        public ReplicationEndpointInfo(string endpointId, IImmutableSet<LogInfo> logInfos) : this()
         {
             EndpointId = endpointId;
-            LogNames = logNames;
+            LogInfos = logInfos;
         }
 
         public string LogId(string logName)
         {
             return LogId(EndpointId, logName);
         }
+
+        public LogInfo? LogInfo(string logName)
+        {
+            var logInfo = LogInfos.FirstOrDefault(x => x.LogName == logName);
+            return Equals(logInfo, default(LogInfo))
+                ? default(LogInfo?)
+                : logInfo;
+        }
+
+        public IEnumerable<string> LogNames { get { return LogInfos.Select(x => x.LogName); } }
     }
 
     [Serializable]
-    public sealed class GetReplicationEndpointInfo : IReplicationSerializable
+    internal sealed class GetReplicationEndpointInfo : IReplicationSerializable
     {
         public static readonly GetReplicationEndpointInfo Instance = new GetReplicationEndpointInfo();
 
@@ -42,7 +66,7 @@ namespace Akka.Eventsourced.ReplicationProtocol
     }
 
     [Serializable]
-    public struct GetReplicationEndpointInfoSuccess : IReplicationSerializable
+    internal struct GetReplicationEndpointInfoSuccess : IReplicationSerializable
     {
         public readonly ReplicationEndpointInfo Info;
 
@@ -53,7 +77,7 @@ namespace Akka.Eventsourced.ReplicationProtocol
     }
 
     [Serializable]
-    public sealed class ReplicationDue : IReplicationSerializable
+    internal sealed class ReplicationDue : IReplicationSerializable
     {
         public static readonly ReplicationDue Instance = new ReplicationDue();
 
@@ -63,23 +87,23 @@ namespace Akka.Eventsourced.ReplicationProtocol
     }
 
     [Serializable]
-    public sealed class GetTimeTracker
+    public sealed class GetEventLogClock
     {
-        public static readonly GetTimeTracker Instance = new GetTimeTracker();
+        public static readonly GetEventLogClock Instance = new GetEventLogClock();
 
-        private GetTimeTracker()
+        private GetEventLogClock()
         {
         }
     }
 
     [Serializable]
-    public struct GetTimeTrackerSuccess
+    public struct GetEventLogClockSucces
     {
-        public readonly TimeTracker Tracker;
+        public readonly EventLogClock Clock;
 
-        public GetTimeTrackerSuccess(TimeTracker tracker)
+        public GetEventLogClockSucces(EventLogClock clock)
         {
-            Tracker = tracker;
+            Clock = clock;
         }
     }
 
@@ -220,9 +244,8 @@ namespace Akka.Eventsourced.ReplicationProtocol
     }
 
     [Serializable]
-    public struct ReplicationReadSuccess : IReplicationSerializable
+    public struct ReplicationReadSuccess : IDurableEventBatch, IReplicationSerializable
     {
-        public readonly IEnumerable<DurableEvent> Events;
         public readonly long ReplicationProgress;
         public readonly string TargetLogId;
         public readonly VectorTime CurrentSourceVectorTime;
@@ -234,6 +257,9 @@ namespace Akka.Eventsourced.ReplicationProtocol
             TargetLogId = targetLogId;
             CurrentSourceVectorTime = currentSourceVectorTime;
         }
+
+        public int Count { get { return Events.Count(); } }
+        public IEnumerable<DurableEvent> Events { get; private set; }
     }
 
     [Serializable]
@@ -250,20 +276,51 @@ namespace Akka.Eventsourced.ReplicationProtocol
     }
 
     [Serializable]
-    public struct ReplicationWrite : IReplicationSerializable
+    public struct ReplicationWriteMany
     {
-        public readonly IEnumerable<DurableEvent> Events;
+        public readonly IEnumerable<ReplicationWrite> Writes;
+
+        public ReplicationWriteMany(IEnumerable<ReplicationWrite> writes)
+        {
+            Writes = writes;
+        }
+    }
+
+    [Serializable]
+    public sealed class ReplicationWriteManyComplete
+    {
+        public static readonly ReplicationWriteManyComplete Instance = new ReplicationWriteManyComplete();
+
+        private ReplicationWriteManyComplete()
+        {
+        }
+    }
+
+    [Serializable]
+    public struct ReplicationWrite : IDurableEventBatch, IReplicationSerializable
+    {
         public readonly string SourceLogId;
         public readonly long ReplicationProgress;
         public readonly VectorTime CurrentSourceVectorTime;
+        public readonly IActorRef Initiator;
 
-        public ReplicationWrite(IEnumerable<DurableEvent> events, string sourceLogId, long replicationProgress, VectorTime currentSourceVectorTime) : this()
+        public ReplicationWrite(IEnumerable<DurableEvent> events, string sourceLogId, long replicationProgress, VectorTime currentSourceVectorTime, IActorRef initiator = null) : this()
         {
             Events = events;
             SourceLogId = sourceLogId;
             ReplicationProgress = replicationProgress;
             CurrentSourceVectorTime = currentSourceVectorTime;
+            Initiator = initiator;
         }
+
+        public ReplicationWrite WithInitiator(IActorRef initiator)
+        {
+            if (initiator == null) throw new ArgumentNullException("initiator", "ReplicationWrite.WithInitiator expected initiator to be not null");
+            return new ReplicationWrite(Events, SourceLogId, ReplicationProgress, CurrentSourceVectorTime, initiator);
+        }
+
+        public int Count { get { return Events.Count(); } }
+        public IEnumerable<DurableEvent> Events { get; private set; }
     }
 
     [Serializable]

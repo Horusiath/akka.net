@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.Contracts;
 
@@ -122,5 +123,14 @@ namespace Akka.Eventsourced
         {
             return VectorTimestamp <= vectorTime;
         }
+    }
+
+    /// <summary>
+    /// Implemented by protocol messages that contain a <see cref="DurableEvent"/> sequences.
+    /// </summary>
+    public interface IDurableEventBatch
+    {
+        int Count { get; }
+        IEnumerable<DurableEvent> Events { get; }
     }
 }

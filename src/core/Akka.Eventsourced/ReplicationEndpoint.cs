@@ -124,7 +124,6 @@ namespace Akka.Eventsourced
             System = system;
 
             Settings = ReplicationSettings.Create(system);
-            Info = new ReplicationEndpointInfo(id, logNames);
             Logs = logNames.ToImmutableDictionary(x => x, x => system.ActorOf(logFactory(x)));
 
             _acceptor = system.ActorOf(Props.Create(() => new Acceptor(this)), Acceptor.Name);
@@ -143,7 +142,7 @@ namespace Akka.Eventsourced
                 var promise = new TaskCompletionSource<object>();
                 var recovery = new Recovery(this);
                 var infos = await recovery.ReadEndpointInfoAsync();
-                var trackers = await recovery.ReadTimeTrackersAsync();
+                var trackers = await recovery.ReadEventLogClocksAsync();
 
                 var phase1 = Task.Run<IEnumerable<RecoveryLink>>(async () =>
                 {

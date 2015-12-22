@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 
 namespace Akka.Eventsourced.EventsourcedProtocol
@@ -26,9 +27,8 @@ namespace Akka.Eventsourced.EventsourcedProtocol
     }
 
     [Serializable]
-    public struct Write
+    public struct Write : IDurableEventBatch
     {
-        public readonly IEnumerable<DurableEvent> Events;
         public readonly IActorRef Initiator;
         public readonly IActorRef Requestor;
         public readonly long InstanceId;
@@ -40,6 +40,9 @@ namespace Akka.Eventsourced.EventsourcedProtocol
             Requestor = requestor;
             InstanceId = instanceId;
         }
+
+        public int Count { get { return Events.Count(); } }
+        public IEnumerable<DurableEvent> Events { get; private set; }
     }
 
     [Serializable]

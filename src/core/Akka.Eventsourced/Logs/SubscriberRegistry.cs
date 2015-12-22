@@ -9,6 +9,8 @@ namespace Akka.Eventsourced.Logs
 {
     internal struct SubscriberRegistry
     {
+        public static readonly SubscriberRegistry Empty = new SubscriberRegistry(Logs.AggregateRegistry.Empty, ImmutableHashSet<IActorRef>.Empty);
+
         public readonly AggregateRegistry AggregateRegistry;
         public readonly IImmutableSet<IActorRef> DefaultRegistry;
 
@@ -82,6 +84,8 @@ namespace Akka.Eventsourced.Logs
 
     internal struct AggregateRegistry
     {
+        public static AggregateRegistry Empty = new AggregateRegistry();
+
         public readonly IImmutableDictionary<string, IImmutableSet<IActorRef>> Registry;
         public readonly IImmutableDictionary<IActorRef, string> RegistryIndex;
 

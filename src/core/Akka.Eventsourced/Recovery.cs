@@ -46,16 +46,16 @@ namespace Akka.Eventsourced
     internal struct RecoveryLink
     {
         public readonly string LogName;
-        public readonly string LocalLogId;
+        public readonly EventLogClock LocalClock;
         public readonly string RemoteLogId;
-        public readonly TimeTracker Tracker;
+        public readonly long RemoteSequenceNr;
 
-        public RecoveryLink(string logName, string localLogId, string remoteLogId, TimeTracker tracker) : this()
+        public RecoveryLink(string logName, EventLogClock localClock, string remoteLogId, long remoteSequenceNr)
         {
             LogName = logName;
-            LocalLogId = localLogId;
+            LocalClock = localClock;
             RemoteLogId = remoteLogId;
-            Tracker = tracker;
+            RemoteSequenceNr = remoteSequenceNr;
         }
     }
     
@@ -75,7 +75,7 @@ namespace Akka.Eventsourced
             Settings = RecoverySettings.Create(replicationEndpoint.System);
         }
 
-        public async Task<IImmutableDictionary<string, TimeTracker>> ReadTimeTrackersAsync()
+        public async Task<IImmutableDictionary<string, EventLogClock>> ReadEventLogClocksAsync()
         {
             throw new NotImplementedException();
         }
@@ -92,7 +92,7 @@ namespace Akka.Eventsourced
 
         public IEnumerable<RecoveryLink> GetRecoveryLinks(
             IImmutableSet<ReplicationEndpointInfo> endpointInfos,
-            IImmutableDictionary<string, TimeTracker> timeTrackers)
+            IImmutableDictionary<string, EventLogClock> EventLogClocks)
         {
             throw new NotImplementedException();
         } 
@@ -227,18 +227,40 @@ namespace Akka.Eventsourced
 
     internal class RecoveryActor : ReceiveActor
     {
+        private readonly string endpointId;
+        private readonly RecoveryLink link;
+        private readonly ILoggingAdapter log;
+
         public RecoveryActor(string endpointId, RecoveryLink link)
         {
-            var log = Context.GetLogger();
-            Receive<ReplicationRead>(r => r.FromSequenceNr > link.Tracker.SequenceNr + 1L, r =>
+            this.endpointId = endpointId;
+            this.link = link;
+            this.log = Context.GetLogger();
+
+            RecoveringMetadata();
+        }
+
+        public void RecoveringMetadata()
+        {
+            Receive<ReplicationRead>(r => r.FromSequenceNr > (link.LocalClock.SequenceNr + 1L), r =>
             {
                 log.Debug("[Recovery of {0}] Trigger update of inconsistent replication progress at {1}", endpointId, link.RemoteLogId);
-                Sender.Tell(new ReplicationReadSuccess(Enumerable.Empty<DurableEvent>(), link.Tracker.SequenceNr, link.RemoteLogId, link.Tracker.VectorTime));
+                Sender.Tell(new ReplicationReadSuccess(Enumerable.Empty<DurableEvent>(), link.LocalClock.SequenceNr, link.RemoteLogId, link.LocalClock.VersionVector));
             });
             Receive<ReplicationRead>(r =>
             {
-                Sender.Tell(new ReplicationReadSuccess(Enumerable.Empty<DurableEvent>(), r.FromSequenceNr - 1, link.RemoteLogId, link.Tracker.VectorTime));
+                Sender.Tell(new ReplicationReadSuccess(Enumerable.Empty<DurableEvent>(), r.FromSequenceNr - 1, link.RemoteLogId, link.LocalClock.VersionVector));
                 Context.Parent.Tell(new Acceptor.RecoveryStepCompleted(link));
+                Become(RecoveringEvents);
+            });
+        }
+
+        public void RecoveringEvents()
+        {
+            Receive<ReplicationWriteSuccess>(success =>
+            {
+                if(link.RemoteSequenceNr <= success.StoredReplicationProgress)
+                    Context.Parent.Tell(new Acceptor.RecoveryStepCompleted(link));
             });
         }
     }
