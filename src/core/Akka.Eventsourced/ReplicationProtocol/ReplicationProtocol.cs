@@ -240,10 +240,12 @@ namespace Akka.Eventsourced.ReplicationProtocol
     public struct ReplicationReadFailure : IReplicationSerializable
     {
         public readonly Exception Cause;
+        public readonly string TargetLogId;
 
-        public ReplicationReadFailure(Exception cause)
+        public ReplicationReadFailure(Exception cause, string targetLogId)
         {
             Cause = cause;
+            TargetLogId = targetLogId;
         }
     }
 

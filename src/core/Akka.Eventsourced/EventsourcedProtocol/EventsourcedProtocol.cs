@@ -5,22 +5,22 @@ using Akka.Actor;
 namespace Akka.Eventsourced.EventsourcedProtocol
 {
     [Serializable]
-    public struct WriteN
+    public struct WriteMany
     {
         public readonly IEnumerable<Write> Writes;
 
-        public WriteN(IEnumerable<Write> writes)
+        public WriteMany(IEnumerable<Write> writes)
         {
             Writes = writes;
         }
     }
 
     [Serializable]
-    public sealed class WriteNComplete
+    public sealed class WriteManyComplete
     {
-        public static readonly WriteNComplete Instance = new WriteNComplete();
+        public static readonly WriteManyComplete Instance = new WriteManyComplete();
 
-        private WriteNComplete()
+        private WriteManyComplete()
         {
         }
     }

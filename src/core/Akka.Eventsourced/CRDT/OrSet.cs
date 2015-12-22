@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
@@ -42,6 +43,7 @@ namespace Akka.Eventsourced.CRDT
     /// <summary>
     /// Replicated OR-Set. In case of concurrent <see cref="Add"/>/<see cref="Remove"/> operations, <see cref="Add"/> has precedence. 
     /// </summary>
+    [Serializable]
     public class OrSet<T> : IValued<IEnumerable<T>>, ISerializableCRDT
     {
         public static ICRDTServiceOperations<OrSet<T>, IImmutableSet<T>> Operations = OrSetOperations<T>.Instance;
@@ -132,6 +134,7 @@ namespace Akka.Eventsourced.CRDT
         }
     }
 
+    [Serializable]
     internal struct AddOp<T>
     {
         public readonly T Entry;
@@ -142,6 +145,7 @@ namespace Akka.Eventsourced.CRDT
         }
     }
 
+    [Serializable]
     internal struct RemoveOp<T>
     {
         public readonly T Entry;

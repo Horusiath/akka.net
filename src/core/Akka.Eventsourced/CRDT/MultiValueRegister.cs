@@ -38,6 +38,7 @@ namespace Akka.Eventsourced.CRDT
     /// <summary>
     /// Replicated Multi-Value Register.
     /// </summary>
+    [Serializable]
     public sealed class MultiValueRegister<T> : IValued<IEnumerable<T>>, ISerializableCRDT
     {
         public static readonly ICRDTServiceOperations<MultiValueRegister<T>, IImmutableSet<T>> Operations = MultiValueRegisterOperations<T>.Instance;
@@ -75,7 +76,7 @@ namespace Akka.Eventsourced.CRDT
     /// <summary>
     /// Internal representation of <see cref="MultiValueRegister"/> value.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    [Serializable]
     public struct Registered<T> : IEquatable<Registered<T>>
     {
         public readonly T Value;
@@ -122,6 +123,7 @@ namespace Akka.Eventsourced.CRDT
         }
     }
 
+    [Serializable]
     internal struct SetOp<T>
     {
         public readonly T Value;

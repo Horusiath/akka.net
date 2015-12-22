@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Akka.Actor;
 
 namespace Akka.Eventsourced.CRDT
@@ -35,6 +36,7 @@ namespace Akka.Eventsourced.CRDT
     /// <summary>
     /// A replicated counter.
     /// </summary>
+    [Serializable]
     public struct Counter : IValued<long>
     {
         public static readonly ICRDTServiceOperations<Counter, long> Operations = CounterServiceOperations.Instance;
@@ -57,6 +59,7 @@ namespace Akka.Eventsourced.CRDT
         }
     }
 
+    [Serializable]
     internal struct UpdateOp
     {
         public readonly long Delta;

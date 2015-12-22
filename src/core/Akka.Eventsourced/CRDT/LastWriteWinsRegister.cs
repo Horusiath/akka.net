@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
@@ -34,7 +35,7 @@ namespace Akka.Eventsourced.CRDT
             return UpdateOperationAsync(crdtId, new SetOp<T>(value));
         }
     }
-    
+
     /// <summary>
     /// Replicated Last Write Wins Register. In case of the multiple concurrent assigments,
     /// the last write request always wins. Last write is determined based on vector timestamp 
@@ -43,6 +44,7 @@ namespace Akka.Eventsourced.CRDT
     /// <remarks>
     /// This implementation relies on synchronized system clocks.
     /// </remarks>
+    [Serializable]
     public class LastWriteWinsRegister<T> : IValued<T>, ISerializableCRDT
     {
         public static readonly ICRDTServiceOperations<LastWriteWinsRegister<T>, T> Operations = LastWriteWinsRegisterOperations<T>.Instance;

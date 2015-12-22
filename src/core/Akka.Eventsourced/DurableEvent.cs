@@ -103,5 +103,24 @@ namespace Akka.Eventsourced
                 localLogId: logId,
                 localSequenceNr: sequenceNr);
         }
+
+        /// <summary>
+        /// Returns true if this event did not happen before or at a given <paramref name="vectorTime"/>
+        /// and passes the given replication <paramref name="filter"/>.
+        /// </summary>
+        [Pure]
+        public bool Replicable(VectorTime vectorTime, IReplicationFilter filter)
+        {
+            return !Before(vectorTime) && filter.Apply(this);
+        }
+
+        /// <summary>
+        /// Returns true if current event happened before provided <paramref name="vectorTime"/>.
+        /// </summary>
+        [Pure]
+        private bool Before(VectorTime vectorTime)
+        {
+            return VectorTimestamp <= vectorTime;
+        }
     }
 }
