@@ -13,6 +13,8 @@
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -34,41 +36,87 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Google.ProtocolBuffersLite, Version=2.4.1.555, Culture=neutral, PublicKeyToken=55f7125234beb589, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Google.ProtocolBuffersLite.2.4.1.555\lib\net40\Google.ProtocolBuffersLite.dll</HintPath>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\EntityFramework.6.0.0\lib\net45\EntityFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Google.ProtocolBuffersLite.Serialization, Version=2.4.1.555, Culture=neutral, PublicKeyToken=55f7125234beb589, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Google.ProtocolBuffersLite.2.4.1.555\lib\net40\Google.ProtocolBuffersLite.Serialization.dll</HintPath>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\EntityFramework.6.0.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+    <Reference Include="Google.ProtocolBuffers, Version=2.4.1.555, Culture=neutral, PublicKeyToken=55f7125234beb589, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Google.ProtocolBuffers.2.4.1.555\lib\net40\Google.ProtocolBuffers.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Google.ProtocolBuffers.Serialization, Version=2.4.1.555, Culture=neutral, PublicKeyToken=55f7125234beb589, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Google.ProtocolBuffers.2.4.1.555\lib\net40\Google.ProtocolBuffers.Serialization.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Collections.Immutable, Version=1.1.36.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Collections.Immutable.1.1.36\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.SQLite, Version=1.0.103.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Data.SQLite.Core.1.0.103\lib\net45\System.Data.SQLite.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="Wire, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Wire.0.8.1\lib\net45\Wire.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Messages.cs" />
     <Compile Include="PerformanceActors.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SqliteBenchmark.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\contrib\persistence\Akka.Persistence.Query.Sql\Akka.Persistence.Query.Sql.csproj">
+      <Project>{3cbd3880-0655-44cc-ad81-77e8cadfcc3e}</Project>
+      <Name>Akka.Persistence.Query.Sql</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\contrib\persistence\Akka.Persistence.Sql.Common\Akka.Persistence.Sql.Common.csproj">
+      <Project>{3b9e6211-9488-4db5-b714-24248693b38f}</Project>
+      <Name>Akka.Persistence.Sql.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\contrib\persistence\Akka.Persistence.Sqlite\Akka.Persistence.Sqlite.csproj">
+      <Project>{453efd22-7c53-4887-9dbf-fcfc9172e909}</Project>
+      <Name>Akka.Persistence.Sqlite</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\contrib\serializers\Akka.Serialization.Wire\Akka.Serialization.Wire.csproj">
+      <Project>{b47ca568-40cf-48de-b87e-31bd400ebb08}</Project>
+      <Name>Akka.Serialization.Wire</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\core\Akka.Persistence.Query\Akka.Persistence.Query.csproj">
+      <Project>{92ab2788-e008-40d0-8b54-0c95b3cf3404}</Project>
+      <Name>Akka.Persistence.Query</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\core\Akka.Persistence\Akka.Persistence.csproj">
       <Project>{fca84dea-c118-424b-9eb8-34375dfef18a}</Project>
       <Name>Akka.Persistence</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\core\Akka.Streams\Akka.Streams.csproj">
+      <Project>{6180a876-ae4a-41e2-a08f-84fdea0c8a0e}</Project>
+      <Name>Akka.Streams</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\core\Akka\Akka.csproj">
       <Project>{5deddf90-37f0-48d3-a0b0-a5cbd8a7e377}</Project>
@@ -82,7 +130,9 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
+    <Error Condition="!Exists('..\..\packages\System.Data.SQLite.Core.1.0.103\build\net45\System.Data.SQLite.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\System.Data.SQLite.Core.1.0.103\build\net45\System.Data.SQLite.Core.targets'))" />
   </Target>
+  <Import Project="..\..\packages\System.Data.SQLite.Core.1.0.103\build\net45\System.Data.SQLite.Core.targets" Condition="Exists('..\..\packages\System.Data.SQLite.Core.1.0.103\build\net45\System.Data.SQLite.Core.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

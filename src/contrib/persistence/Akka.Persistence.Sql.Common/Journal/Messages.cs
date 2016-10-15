@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using Akka.Actor;
 
 namespace Akka.Persistence.Sql.Common.Journal
 {
@@ -17,62 +18,58 @@ namespace Akka.Persistence.Sql.Common.Journal
     /// </summary>
     public sealed class JournalEntry
     {
+        internal static readonly string[] EmptyTags = new string[0];
+
         public readonly string PersistenceId;
         public readonly long SequenceNr;
-        public readonly bool IsDeleted;
         public readonly string Manifest;
-        public readonly DateTime Timestamp;
         public readonly object Payload;
+        public readonly IActorRef Sender;
+        public readonly string[] Tags;
 
-        public JournalEntry(string persistenceId, long sequenceNr, bool isDeleted, string manifest, DateTime timestamp, object payload)
+        public JournalEntry(string persistenceId, long sequenceNr, string manifest, object payload, IActorRef sender, string[] tags = null)
         {
             PersistenceId = persistenceId;
             SequenceNr = sequenceNr;
-            IsDeleted = isDeleted;
             Manifest = manifest;
             Payload = payload;
-            Timestamp = timestamp;
+            Sender = sender;
+            Tags = tags ?? EmptyTags;
         }
     }
-
-    /// <summary>
-    /// Persisted event identifier returning set of keys used to map particular instance of an event to database row id.
-    /// </summary>
-    public struct EventId
-    {
-        /// <summary>
-        /// Database row identifier.
-        /// </summary>
-        public readonly long Id;
-
-        /// <summary>
-        /// Persistent event sequence number, monotonically increasing in scope of the same <see cref="PersistenceId"/>.
-        /// </summary>
-        public readonly long SequenceNr;
-
-        /// <summary>
-        /// Id of persistent actor, used to recognize all events related to that actor.
-        /// </summary>
-        public readonly string PersistenceId;
-
-        public EventId(long id, long sequenceNr, string persistenceId)
-        {
-            Id = id;
-            SequenceNr = sequenceNr;
-            PersistenceId = persistenceId;
-        }
-    }
-
+    
     /// <summary>
     /// Class used for storing whole intermediate set of write changes to be applied within single SQL transaction.
     /// </summary>
-    public sealed class WriteJournalBatch
+    public sealed class WriteBatch
     {
-        public readonly IDictionary<IPersistentRepresentation, IImmutableSet<string>> EntryTags;
+        public readonly JournalEntry[] Entries;
 
-        public WriteJournalBatch(IDictionary<IPersistentRepresentation, IImmutableSet<string>> entryTags)
+        public WriteBatch(JournalEntry[] entries)
         {
-            EntryTags = entryTags;
+            Entries = entries;
+        }
+    }
+
+    public sealed class WriteBatchSuccess
+    {
+        public readonly ImmutableHashSet<string> PersistenceIds;
+        public readonly ImmutableHashSet<string> Tags;
+
+        public WriteBatchSuccess(ImmutableHashSet<string> persistenceIds, ImmutableHashSet<string> tags)
+        {
+            PersistenceIds = persistenceIds;
+            Tags = tags;
+        }
+    }
+
+    public sealed class WriteBatchFailure
+    {
+        public readonly Exception Cause;
+
+        public WriteBatchFailure(Exception cause)
+        {
+            Cause = cause;
         }
     }
 

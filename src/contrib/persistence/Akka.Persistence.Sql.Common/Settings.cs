@@ -19,42 +19,47 @@ namespace Akka.Persistence.Sql.Common
         /// <summary>
         /// Connection string used to access a persistent SQL Server instance.
         /// </summary>
-        public string ConnectionString { get; private set; }
+        public string ConnectionString { get; }
 
         /// <summary>
         /// Name of the connection string stored in &lt;connectionStrings&gt; section of *.config file.
         /// </summary>
-        public string ConnectionStringName { get; private set; }
+        public string ConnectionStringName { get; }
 
         /// <summary>
         /// Connection timeout for SQL Server related operations.
         /// </summary>
-        public TimeSpan ConnectionTimeout { get; private set; }
+        public TimeSpan ConnectionTimeout { get; }
         
         /// <summary>
         /// Name of the table corresponding to event journal.
         /// </summary>
-        public string JournalTableName { get; private set; }
+        public string JournalTableName { get; }
 
         /// <summary>
         /// Name of the schema, where journal table resides.
         /// </summary>
-        public string SchemaName { get; private set; }
+        public string SchemaName { get; }
 
         /// <summary>
         /// Name of the table corresponding to event journal persistenceId and sequenceNr metadata.
         /// </summary>
-        public string MetaTableName { get; private set; }
+        public string MetaTableName { get; }
 
         /// <summary>
         /// Fully qualified type name for <see cref="ITimestampProvider"/> used to generate journal timestamps.
         /// </summary>
-        public string TimestampProvider { get; set; }
+        public string TimestampProvider { get; }
 
         /// <summary>
         /// Flag determining in in case of event journal or metadata table missing, they should be automatically initialized.
         /// </summary>
-        public bool AutoInitialize { get; private set; }
+        public bool AutoInitialize { get; }
+
+        /// <summary>
+        /// Maximum number of concurrent connections that can be used.
+        /// </summary>
+        public int MaxConcurrentWrites { get; }
 
         public JournalSettings(Config config)
         {
@@ -67,7 +72,8 @@ namespace Akka.Persistence.Sql.Common
             JournalTableName = config.GetString("table-name");
             MetaTableName = config.GetString("metadata-table-name");
             TimestampProvider = config.GetString("timestamp-provider");
-            AutoInitialize = config.GetBoolean("auto-initialize");
+            AutoInitialize = config.GetBoolean("auto-initialize", false);
+            MaxConcurrentWrites = config.GetInt("max-concurrent-writes", 100);
         }
     }
 

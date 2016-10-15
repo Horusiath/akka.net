@@ -23,31 +23,21 @@ namespace Akka.Persistence.Sql.Common.Journal
 {
     public abstract class SqlJournal : AsyncWriteJournal, IWithUnboundedStash
     {
-        private readonly Dictionary<string, ISet<IActorRef>> _persistenceIdSubscribers = new Dictionary<string, ISet<IActorRef>>();
-        private readonly Dictionary<string, ISet<IActorRef>> _tagSubscribers = new Dictionary<string, ISet<IActorRef>>();
-        private readonly HashSet<IActorRef> _allPersistenceIdSubscribers = new HashSet<IActorRef>();
-        private readonly ReaderWriterLockSlim _allPersistenceIdsLock = new ReaderWriterLockSlim();
-        private HashSet<string> _allPersistenceIds = new HashSet<string>();
-        private IImmutableDictionary<string, long> _tagSequenceNr = ImmutableDictionary<string, long>.Empty;
-
         private readonly CancellationTokenSource _pendingRequestsCancellation;
-        private JournalSettings _settings;
-
+        private readonly JournalSettings _settings;
         private ILoggingAdapter _log;
+        private int _remainingConnections;
+
+        private readonly List<JournalEntry> _entryBatch = new List<JournalEntry>();
 
         protected SqlJournal(Config journalConfig)
         {
             _settings = new JournalSettings(journalConfig);
+            _remainingConnections = _settings.MaxConcurrentWrites;
             _pendingRequestsCancellation = new CancellationTokenSource();
         }
 
         public IStash Stash { get; set; }
-
-        public IEnumerable<string> AllPersistenceIds => _allPersistenceIds;
-
-        protected bool HasPersistenceIdSubscribers => _persistenceIdSubscribers.Count != 0;
-        protected bool HasTagSubscribers => _tagSubscribers.Count != 0;
-        protected bool HasAllPersistenceIdSubscribers => _allPersistenceIdSubscribers.Count != 0;
 
         /// <summary>
         /// Returns a HOCON config path to associated journal.
@@ -131,14 +121,11 @@ namespace Akka.Persistence.Sql.Common.Journal
                             else eventToTags.Add(p, ImmutableHashSet<string>.Empty);
                         }
                         else eventToTags.Add(p, ImmutableHashSet<string>.Empty);
-
-                        if (IsTagId(p.PersistenceId))
-                            throw new InvalidOperationException($"Persistence Id {p.PersistenceId} must not start with {QueryExecutor.Configuration.TagsColumnName}");
-
+                        
                         NotifyNewPersistenceIdAdded(p.PersistenceId);
                     }
 
-                    var batch = new WriteJournalBatch(eventToTags);
+                    var batch = new WriteBatch(eventToTags);
                     await QueryExecutor.InsertBatchAsync(connection, _pendingRequestsCancellation.Token, batch);
                 }
             });
@@ -167,22 +154,43 @@ namespace Akka.Persistence.Sql.Common.Journal
             return result;
         }
 
-        /// <summary>
-        /// Replays all events with given tag withing provided boundaries from current database.
-        /// </summary>
-        protected virtual async Task<long> ReplayTaggedMessagesAsync(ReplayTaggedMessages replay)
+        protected async bool TryWriteBatch(JournalEntry[] entries, IActorRef self)
         {
-            using (var connection = CreateDbConnection())
+            if ((--_remainingConnections) > 0)
             {
-                await connection.OpenAsync();
-                return await QueryExecutor
-                    .SelectByTagAsync(connection, _pendingRequestsCancellation.Token, replay.Tag, replay.FromOffset, replay.ToOffset, replay.Max, replayedTagged => {
-                        foreach(var adapted in AdaptFromJournal(replayedTagged.Persistent))
-                        { 
-                            replay.ReplyTo.Tell(new ReplayedTaggedMessage(adapted, replayedTagged.Tag, replayedTagged.Offset), ActorRefs.NoSender);
-                        }
-                    });
+                var persistenceIds = ImmutableHashSet<string>.Empty.ToBuilder();
+                var tags = ImmutableHashSet<string>.Empty.ToBuilder();
+                var batch = new WriteBatch(entries);
+
+                for (int i = 0; i < entries.Length; i++)
+                {
+                    var entry = entries[i];
+                    persistenceIds.Add(entry.PersistenceId);
+                    for (int j = 0; j < entry.Tags.Length; j++)
+                    {
+                        tags.Add(entry.Tags[j]);
+                    }
+                }
+
+                using (var connection = CreateDbConnection())
+                {
+                    try
+                    {
+                        await connection.OpenAsync();
+                        await QueryExecutor.InsertBatchAsync(connection, _pendingRequestsCancellation.Token, batch);
+
+                        self.Tell(new WriteBatchSuccess(persistenceIds.ToImmutable(), tags.ToImmutable()));
+                    }
+                    catch (Exception cause)
+                    {
+                        self.Tell(new WriteBatchFailure(cause));
+                    }
+
+                    return true;
+                }
             }
+
+            return false;
         }
 
         public override async Task ReplayMessagesAsync(IActorContext context, string persistenceId, long fromSequenceNr, long toSequenceNr, long max,
@@ -249,128 +257,6 @@ namespace Akka.Persistence.Sql.Common.Journal
             return CreateDbConnection(connectionString);
         }
 
-        public void RemoveSubscriber(IActorRef subscriber)
-        {
-            var pidSubscriptions = _persistenceIdSubscribers.Values.Where(x => x.Contains(subscriber));
-            foreach (var subscription in pidSubscriptions)
-                subscription.Remove(subscriber);
-
-            var tagSubscriptions = _tagSubscribers.Values.Where(x => x.Contains(subscriber));
-            foreach (var subscription in tagSubscriptions)
-                subscription.Remove(subscriber);
-
-            _allPersistenceIdSubscribers.Remove(subscriber);
-        }
-
-        public void AddTagSubscriber(IActorRef subscriber, string tag)
-        {
-            ISet<IActorRef> subscriptions;
-            if (!_tagSubscribers.TryGetValue(tag, out subscriptions))
-            {
-                subscriptions = new HashSet<IActorRef>();
-                _tagSubscribers.Add(tag, subscriptions);
-            }
-
-            subscriptions.Add(subscriber);
-        }
-
-        public void AddAllPersistenceIdSubscriber(IActorRef subscriber)
-        {
-            _allPersistenceIdSubscribers.Add(subscriber);
-            subscriber.Tell(new CurrentPersistenceIds(AllPersistenceIds));
-        }
-
-        public void AddPersistenceIdSubscriber(IActorRef subscriber, string persistenceId)
-        {
-            ISet<IActorRef> subscriptions;
-            if (!_persistenceIdSubscribers.TryGetValue(persistenceId, out subscriptions))
-            {
-                subscriptions = new HashSet<IActorRef>();
-                _persistenceIdSubscribers.Add(persistenceId, subscriptions);
-            }
-
-            subscriptions.Add(subscriber);
-        }
-
-        private async Task<long> NextTagSequenceNr(string tag)
-        {
-            long value;
-            if (!_tagSequenceNr.TryGetValue(tag, out value))
-            {
-                value = await ReadHighestSequenceNrAsync(TagId(tag), 0L);
-            }
-            value++;
-            _tagSequenceNr = _tagSequenceNr.SetItem(tag, value);
-            return value;
-        }
-
-        private string TagId(string tag) => QueryExecutor.Configuration.TagsColumnName + tag;
-
-        private void NotifyNewPersistenceIdAdded(string persistenceId)
-        {
-            var isNew = TryAddPersistenceId(persistenceId);
-            if (isNew && HasAllPersistenceIdSubscribers && !IsTagId(persistenceId))
-            {
-                var added = new PersistenceIdAdded(persistenceId);
-                foreach (var subscriber in _allPersistenceIdSubscribers)
-                    subscriber.Tell(added);
-            }
-        }
-
-        private bool TryAddPersistenceId(string persistenceId)
-        {
-            try
-            {
-                _allPersistenceIdsLock.EnterUpgradeableReadLock();
-
-                if (_allPersistenceIds.Contains(persistenceId)) return false;
-                else
-                {
-                    try
-                    {
-                        _allPersistenceIdsLock.EnterWriteLock();
-                        _allPersistenceIds.Add(persistenceId);
-                        return true;
-                    }
-                    finally
-                    {
-                        _allPersistenceIdsLock.ExitWriteLock();
-                    }
-                }
-            }
-            finally
-            {
-                _allPersistenceIdsLock.ExitUpgradeableReadLock();
-            }
-        }
-
-        private bool IsTagId(string persistenceId)
-        {
-            return persistenceId.StartsWith(QueryExecutor.Configuration.TagsColumnName);
-        }
-
-        private void NotifyPersistenceIdChange(string persistenceId)
-        {
-            ISet<IActorRef> subscribers;
-            if (_persistenceIdSubscribers.TryGetValue(persistenceId, out subscribers))
-            {
-                var changed = new EventAppended(persistenceId);
-                foreach (var subscriber in subscribers)
-                    subscriber.Tell(changed);
-            }
-        }
-
-        private void NotifyTagChange(string tag)
-        {
-            ISet<IActorRef> subscribers;
-            if (_tagSubscribers.TryGetValue(tag, out subscribers))
-            {
-                var changed = new TaggedEventAppended(tag);
-                foreach (var subscriber in subscribers)
-                    subscriber.Tell(changed);
-            }
-        }
-
         /// <summary>
         /// Asynchronously deletes all persisted messages identified by provided <paramref name="persistenceId"/>
         /// up to provided message sequence number (inclusive).
@@ -412,8 +298,143 @@ namespace Akka.Persistence.Sql.Common.Journal
             return connectionString;
         }
 
-        #region obsoleted
+        #region Persistence Query support
+
+        private readonly Dictionary<string, HashSet<IActorRef>> _persistenceIdSubscribers = new Dictionary<string, HashSet<IActorRef>>();
+        private readonly Dictionary<string, HashSet<IActorRef>> _tagSubscribers = new Dictionary<string, HashSet<IActorRef>>();
+        private readonly HashSet<IActorRef> _allPersistenceIdSubscribers = new HashSet<IActorRef>();
+        private readonly ReaderWriterLockSlim _allPersistenceIdsLock = new ReaderWriterLockSlim();
+        private HashSet<string> _allPersistenceIds = new HashSet<string>();
+        public IEnumerable<string> AllPersistenceIds => _allPersistenceIds;
+        protected bool HasPersistenceIdSubscribers => _persistenceIdSubscribers.Count != 0;
+        protected bool HasTagSubscribers => _tagSubscribers.Count != 0;
+        protected bool HasAllPersistenceIdSubscribers => _allPersistenceIdSubscribers.Count != 0;
+
+        /// <summary>
+        /// Replays all events with given tag withing provided boundaries from current database.
+        /// </summary>
+        protected virtual async Task<long> ReplayTaggedMessagesAsync(ReplayTaggedMessages replay)
+        {
+            using (var connection = CreateDbConnection())
+            {
+                await connection.OpenAsync();
+                return await QueryExecutor
+                    .SelectByTagAsync(connection, _pendingRequestsCancellation.Token, replay.Tag, replay.FromOffset, replay.ToOffset, replay.Max, replayedTagged => {
+                        foreach (var adapted in AdaptFromJournal(replayedTagged.Persistent))
+                        {
+                            replay.ReplyTo.Tell(new ReplayedTaggedMessage(adapted, replayedTagged.Tag, replayedTagged.Offset), ActorRefs.NoSender);
+                        }
+                    });
+            }
+        }
         
+        private void NotifyNewPersistenceIdAdded(string persistenceId)
+        {
+            var isNew = TryAddPersistenceId(persistenceId);
+            if (isNew && HasAllPersistenceIdSubscribers)
+            {
+                var added = new PersistenceIdAdded(persistenceId);
+                foreach (var subscriber in _allPersistenceIdSubscribers)
+                    subscriber.Tell(added);
+            }
+        }
+
+        private bool TryAddPersistenceId(string persistenceId)
+        {
+            try
+            {
+                _allPersistenceIdsLock.EnterUpgradeableReadLock();
+
+                if (_allPersistenceIds.Contains(persistenceId)) return false;
+                else
+                {
+                    try
+                    {
+                        _allPersistenceIdsLock.EnterWriteLock();
+                        _allPersistenceIds.Add(persistenceId);
+                        return true;
+                    }
+                    finally
+                    {
+                        _allPersistenceIdsLock.ExitWriteLock();
+                    }
+                }
+            }
+            finally
+            {
+                _allPersistenceIdsLock.ExitUpgradeableReadLock();
+            }
+        }
+
+        private void NotifyPersistenceIdChange(string persistenceId)
+        {
+            HashSet<IActorRef> subscribers;
+            if (_persistenceIdSubscribers.TryGetValue(persistenceId, out subscribers))
+            {
+                var changed = new EventAppended(persistenceId);
+                foreach (var subscriber in subscribers)
+                    subscriber.Tell(changed);
+            }
+        }
+
+        private void NotifyTagChange(string tag)
+        {
+            HashSet<IActorRef> subscribers;
+            if (_tagSubscribers.TryGetValue(tag, out subscribers))
+            {
+                var changed = new TaggedEventAppended(tag);
+                foreach (var subscriber in subscribers)
+                    subscriber.Tell(changed);
+            }
+        }
+
+        public void RemoveSubscriber(IActorRef subscriber)
+        {
+            var pidSubscriptions = _persistenceIdSubscribers.Values.Where(x => x.Contains(subscriber));
+            foreach (var subscription in pidSubscriptions)
+                subscription.Remove(subscriber);
+
+            var tagSubscriptions = _tagSubscribers.Values.Where(x => x.Contains(subscriber));
+            foreach (var subscription in tagSubscriptions)
+                subscription.Remove(subscriber);
+
+            _allPersistenceIdSubscribers.Remove(subscriber);
+        }
+
+        public void AddTagSubscriber(IActorRef subscriber, string tag)
+        {
+            HashSet<IActorRef> subscriptions;
+            if (!_tagSubscribers.TryGetValue(tag, out subscriptions))
+            {
+                subscriptions = new HashSet<IActorRef>();
+                _tagSubscribers.Add(tag, subscriptions);
+            }
+
+            subscriptions.Add(subscriber);
+        }
+
+        public void AddAllPersistenceIdSubscriber(IActorRef subscriber)
+        {
+            _allPersistenceIdSubscribers.Add(subscriber);
+            subscriber.Tell(new CurrentPersistenceIds(AllPersistenceIds));
+        }
+
+        public void AddPersistenceIdSubscriber(IActorRef subscriber, string persistenceId)
+        {
+            HashSet<IActorRef> subscriptions;
+            if (!_persistenceIdSubscribers.TryGetValue(persistenceId, out subscriptions))
+            {
+                subscriptions = new HashSet<IActorRef>();
+                _persistenceIdSubscribers.Add(persistenceId, subscriptions);
+            }
+
+            subscriptions.Add(subscriber);
+        }
+
+        #endregion
+        
+        #region obsoleted
+
         protected ITimestampProvider GetTimestampProvider(string typeName)
         {
             var type = Type.GetType(typeName, true);

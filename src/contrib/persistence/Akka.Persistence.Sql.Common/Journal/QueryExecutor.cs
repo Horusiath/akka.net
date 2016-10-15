@@ -58,7 +58,7 @@ namespace Akka.Persistence.Sql.Common.Journal
         /// <summary>
         /// Asynchronously inserts a collection of events and theirs tags into a journal table.
         /// </summary>
-        Task InsertBatchAsync(DbConnection connection, CancellationToken cancellationToken, WriteJournalBatch write);
+        Task InsertBatchAsync(DbConnection connection, CancellationToken cancellationToken, WriteBatch write);
 
         /// <summary>
         /// Asynchronously (permamanently) deletes all events with given <paramref name="persistenceId"/>, up to provided <paramref name="toSequenceNr"/>.
@@ -302,7 +302,7 @@ namespace Akka.Persistence.Sql.Common.Journal
             }
         }
 
-        public virtual async Task InsertBatchAsync(DbConnection connection, CancellationToken cancellationToken, WriteJournalBatch write)
+        public virtual async Task InsertBatchAsync(DbConnection connection, CancellationToken cancellationToken, WriteBatch write)
         {
             using (var command = GetCommand(connection, InsertEventSql))
             using (var tx = connection.BeginTransaction())
