@@ -7,6 +7,7 @@
 
 using Akka.Cluster;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Numerics;
@@ -43,7 +44,14 @@ namespace Akka.DistributedData
     /// This class is immutable, i.e. "modifying" methods return a new instance.
     /// </summary>
     [Serializable]
-    public sealed class GCounter : FastMerge<GCounter>, IRemovedNodePruning<GCounter>, IEquatable<GCounter>, IComparable<GCounter>, IComparable, IReplicatedDataSerialization
+    public sealed class GCounter : 
+        FastMerge<GCounter>, 
+        IRemovedNodePruning<GCounter>, 
+        IEquatable<GCounter>, 
+        IComparable<GCounter>, 
+        IComparable, 
+        IReplicatedDataSerialization,
+        IDeltaReplicatedData<GCounter, GCounter>
     {
         private static readonly BigInteger Zero = new BigInteger(0);
 
@@ -62,6 +70,10 @@ namespace Akka.DistributedData
         /// </summary>
         public BigInteger Value { get; }
 
+        [NonSerialized]
+        private readonly GCounter _delta;
+        public GCounter Delta => _delta;
+
         /// <summary>
         /// TBD
         /// </summary>
@@ -71,8 +83,9 @@ namespace Akka.DistributedData
         /// TBD
         /// </summary>
         /// <param name="state">TBD</param>
-        public GCounter(IImmutableDictionary<UniqueAddress, BigInteger> state)
+        internal GCounter(IImmutableDictionary<UniqueAddress, BigInteger> state, GCounter delta = null)
         {
+            _delta = delta;
             State = state;
             Value = State.Aggregate(Zero, (v, acc) => v + acc.Value);
         }
@@ -99,27 +112,27 @@ namespace Akka.DistributedData
         /// <summary>
         /// Increment the counter with the delta specified. The delta must be zero or positive.
         /// </summary>
-        public GCounter Increment(Cluster.Cluster node, BigInteger delta) => Increment(node.SelfUniqueAddress, delta);
+        public GCounter Increment(Cluster.Cluster node, BigInteger n) => Increment(node.SelfUniqueAddress, n);
 
         /// <summary>
         /// Increment the counter with the delta specified. The delta must be zero or positive.
         /// </summary>
         /// <param name="node">TBD</param>
-        /// <param name="delta">TBD</param>
+        /// <param name="n">TBD</param>
         /// <exception cref="ArgumentException">TBD</exception>
         /// <returns>TBD</returns>
-        public GCounter Increment(UniqueAddress node, BigInteger delta)
+        public GCounter Increment(UniqueAddress node, BigInteger n)
         {
-            if (delta < 0) throw new ArgumentException("Can't decrement a GCounter");
-            if (delta == 0) return this;
+            if (n < 0) throw new ArgumentException("Can't decrement a GCounter");
+            if (n == 0) return this;
 
-            BigInteger v;
-            if (State.TryGetValue(node, out v))
-            {
-                var total = v + delta;
-                return AssignAncestor(new GCounter(State.SetItem(node, total)));
-            }
-            else return AssignAncestor(new GCounter(State.SetItem(node, delta)));
+            var nextValue = State.GetValueOrDefault(node, new BigInteger(0)) + n;
+            var newDelta = Delta == null
+                ? new GCounter(
+                    ImmutableDictionary.CreateRange(new[] {new KeyValuePair<UniqueAddress, BigInteger>(node, nextValue)}))
+                : new GCounter(Delta.State.SetItem(node, nextValue));
+
+            return AssignAncestor(new GCounter(State.SetItem(node, nextValue), newDelta));
         }
 
         /// <summary>
@@ -146,6 +159,9 @@ namespace Akka.DistributedData
                 return new GCounter(merged);
             }
         }
+        public GCounter MergeDelta(GCounter delta) => Merge(delta);
+
+        public GCounter ResetDelta() => Delta == null ? this : AssignAncestor(new GCounter(State));
 
         /// <summary>
         /// TBD

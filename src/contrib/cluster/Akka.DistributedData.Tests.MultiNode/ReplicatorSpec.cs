@@ -519,6 +519,10 @@ namespace Akka.DistributedData.Tests.MultiNode
             {
                 TestConductor.Blackhole(_first, _third, ThrottleTransportAdapter.Direction.Both).Wait(TimeSpan.FromSeconds(5));
                 TestConductor.Blackhole(_second, _third, ThrottleTransportAdapter.Direction.Both).Wait(TimeSpan.FromSeconds(5));
+
+                var thirdAddr = Node(_third).Address;
+                AwaitAssert(() => _cluster.State.Unreachable.Select(c => c.Address)
+                    .Should().BeEquivalentTo(thirdAddr));
             }, _first);
 
             EnterBarrier("blackhole-third");

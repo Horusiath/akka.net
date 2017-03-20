@@ -311,7 +311,8 @@ namespace Akka.DistributedData
                 }
                 else
                 {
-                    var writeAggregator = Context.ActorOf(WriteAggregator.Props(key, envelope, consistency, request, _nodes, _unreachable, Sender, durable).WithDispatcher(Context.Props.Dispatcher));
+                    var writeAggregator = Context.ActorOf(WriteAggregator.Props(key, envelope, consistency, request, _nodes, _unreachable, Sender, durable)
+                        .WithDispatcher(Context.Props.Dispatcher));
 
                     if (durable)
                     {
@@ -783,7 +784,9 @@ namespace Akka.DistributedData
         private void ReceiveMemberUp(Member m)
         {
             if (MatchingRole(m) && m.Address != _selfAddress)
+            {
                 _nodes = _nodes.Add(m.Address);
+            }
         }
 
         private void ReceiveMemberRemoved(Member m)
