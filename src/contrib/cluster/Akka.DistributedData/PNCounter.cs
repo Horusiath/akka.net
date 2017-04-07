@@ -29,11 +29,15 @@ namespace Akka.DistributedData
     /// This class is immutable, i.e. "modifying" methods return a new instance.
     /// </summary>
     [Serializable]
-    public sealed class PNCounter : IReplicatedData<PNCounter>, IRemovedNodePruning<PNCounter>, IReplicatedDataSerialization, IEquatable<PNCounter>
+    public sealed class PNCounter : 
+        IDeltaReplicatedData<PNCounter, PNCounter>, 
+        IRemovedNodePruning<PNCounter>, 
+        IReplicatedDataSerialization, 
+        IEquatable<PNCounter>
     {
         public static readonly PNCounter Empty = new PNCounter();
 
-        public BigInteger Value => Increments.Value - Decrements.Value;
+        public BigInteger Value { get; }
 
         public GCounter Increments { get; }
 
@@ -45,6 +49,7 @@ namespace Akka.DistributedData
         {
             Increments = increments;
             Decrements = decrements;
+            Value = Increments.Value - Decrements.Value;
         }
 
         /// <summary>
@@ -134,6 +139,12 @@ namespace Akka.DistributedData
         public override int GetHashCode() => Increments.GetHashCode() ^ Decrements.GetHashCode();
 
         public IReplicatedData Merge(IReplicatedData other) => Merge((PNCounter) other);
+        public PNCounter Delta => new PNCounter(Increments.Delta ?? GCounter.Empty, Decrements.Delta ?? GCounter.Empty);
+        public PNCounter MergeDelta(PNCounter delta) => Merge(delta);
+
+        public PNCounter ResetDelta() => Increments.Delta == null && Decrements.Delta == null
+            ? this
+            : new PNCounter(Increments.ResetDelta(), Decrements.ResetDelta());
     }
 
     public sealed class PNCounterKey : Key<PNCounter>

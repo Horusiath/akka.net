@@ -11,19 +11,17 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Numerics;
-using Akka.Actor;
-using Akka.Util;
 
 namespace Akka.DistributedData
 {
     /// <summary>
-    /// TBD
+    /// Distributed data key for <see cref="GCounter"/> CRDT.
     /// </summary>
     [Serializable]
     public sealed class GCounterKey : Key<GCounter>
     {
         /// <summary>
-        /// TBD
+        /// Creates a new key for a <see cref="GCounter"/> type.
         /// </summary>
         /// <param name="id">TBD</param>
         public GCounterKey(string id) : base(id) { }
