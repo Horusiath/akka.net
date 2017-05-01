@@ -35,7 +35,7 @@ namespace Akka.Cluster.Tools.Client
         /// <returns>TBD</returns>
         public static ClusterClientReceptionist Get(ActorSystem system)
         {
-            return system.WithExtension<ClusterClientReceptionist, ClusterClientReceptionistExtensionProvider>();
+            return system.WithExtension<ClusterClientReceptionist>();
         }
         
         private readonly ExtendedActorSystem _system;
@@ -150,21 +150,5 @@ namespace Akka.Cluster.Tools.Client
         /// events can be observed via subscribe/unsubscribe.
         /// </summary>
         public IActorRef Underlying => _receptionist;
-    }
-
-    /// <summary>
-    /// TBD
-    /// </summary>
-    public sealed class ClusterClientReceptionistExtensionProvider : ExtensionIdProvider<ClusterClientReceptionist>
-    {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override ClusterClientReceptionist CreateExtension(ExtendedActorSystem system)
-        {
-            return new ClusterClientReceptionist(system);
-        }
     }
 }

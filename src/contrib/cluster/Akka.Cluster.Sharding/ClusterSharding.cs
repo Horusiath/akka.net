@@ -25,24 +25,7 @@ namespace Akka.Cluster.Sharding
     /// Marker trait for remote messages and persistent events/snapshots with special serializer.
     /// </summary>
     public interface IClusterShardingSerializable { }
-
-    /// <summary>
-    /// TBD
-    /// </summary>
-    public class ClusterShardingExtensionProvider : ExtensionIdProvider<ClusterSharding>
-    {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override ClusterSharding CreateExtension(ExtendedActorSystem system)
-        {
-            var extension = new ClusterSharding(system);
-            return extension;
-        }
-    }
-
+    
     /// <summary>
     /// Convenience implementation of <see cref="IMessageExtractor"/> that 
     /// construct ShardId based on the <see cref="object.GetHashCode"/> of the EntityId. 
@@ -230,7 +213,7 @@ namespace Akka.Cluster.Sharding
         /// <returns>TBD</returns>
         public static ClusterSharding Get(ActorSystem system)
         {
-            return system.WithExtension<ClusterSharding, ClusterShardingExtensionProvider>();
+            return system.WithExtension<ClusterSharding>();
         }
 
         /// <summary>

@@ -430,16 +430,8 @@ namespace Akka.Streams.Implementation
     /// <summary>
     /// TBD
     /// </summary>
-    public class FlowNameCounter : ExtensionIdProvider<FlowNameCounter>, IExtension
+    public class FlowNameCounter : IExtension
     {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public static FlowNameCounter Instance(ActorSystem system)
-            => system.WithExtension<FlowNameCounter, FlowNameCounter>();
-
         /// <summary>
         /// TBD
         /// </summary>
@@ -450,7 +442,7 @@ namespace Akka.Streams.Implementation
         /// </summary>
         /// <param name="system">TBD</param>
         /// <returns>TBD</returns>
-        public override FlowNameCounter CreateExtension(ExtendedActorSystem system) => new FlowNameCounter();
+        public static FlowNameCounter Get(ActorSystem system) => system.WithExtension<FlowNameCounter>();
     }
 
     /// <summary>

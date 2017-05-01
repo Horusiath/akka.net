@@ -16,7 +16,7 @@ namespace Akka.Persistence.TestKit
     public abstract class PluginSpec : Akka.TestKit.Xunit2.TestKit, IDisposable
     {
         private static readonly AtomicCounter Counter = new AtomicCounter(0);
-        private readonly PersistenceExtension _extension;
+        private readonly Persistence _extension;
         private string _pid;
         private string _writerGuid;
 
@@ -25,7 +25,7 @@ namespace Akka.Persistence.TestKit
         protected PluginSpec(Config config = null, string actorSystemName = null, ITestOutputHelper output = null) 
             : base(FromConfig(config), actorSystemName, output)
         {
-            _extension = Persistence.Instance.Apply(Sys as ExtendedActorSystem);
+            _extension = Persistence.Get(Sys as ExtendedActorSystem);
             _pid = "p-" + Counter.IncrementAndGet();
             _writerGuid = Guid.NewGuid().ToString();
         }
@@ -37,7 +37,7 @@ namespace Akka.Persistence.TestKit
                 : config.WithFallback(Persistence.DefaultConfig());
         }
 
-        public PersistenceExtension Extension { get { return _extension; } }
+        public Persistence Extension { get { return _extension; } }
         public string Pid { get { return _pid; } }
         public string WriterGuid { get { return _writerGuid; } }
 

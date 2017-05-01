@@ -111,7 +111,7 @@ namespace Akka.Persistence
         /// <summary>
         /// TBD
         /// </summary>
-        protected readonly PersistenceExtension Extension;
+        protected readonly Persistence Extension;
         private readonly ILoggingAdapter _log;
 
         private readonly PersistenceSettings.ViewSettings _viewSettings;
@@ -129,7 +129,7 @@ namespace Akka.Persistence
         protected PersistentView()
         {
             LastSequenceNr = 0L;
-            Extension = Persistence.Instance.Apply(Context.System);
+            Extension = Persistence.Get(Context.System);
             _viewSettings = Extension.Settings.View;
             _internalStash = CreateStash();
             _currentState = RecoveryStarted(long.MaxValue);

@@ -121,7 +121,6 @@
     <Compile Include="TestActor.cs" />
     <Compile Include="TestActorRef.cs" />
     <Compile Include="EventFilter\TestEventListener.cs" />
-    <Compile Include="TestKitAssertionsExtension.cs" />
     <Compile Include="TestKitAssertionsProvider.cs" />
     <Compile Include="TestKitBase.cs" />
     <Compile Include="TestKitBase_ActorOf.cs" />
@@ -131,7 +130,6 @@
     <Compile Include="TestKitBase_Within.cs" />
     <Compile Include="TestKitBase_Receive.cs" />
     <Compile Include="TestKitBase_AwaitConditions.cs" />
-    <Compile Include="TestKitExtension.cs" />
     <Compile Include="TestKitSettings.cs" />
     <Compile Include="TestLatch.cs" />
     <Compile Include="TestProbe.cs" />

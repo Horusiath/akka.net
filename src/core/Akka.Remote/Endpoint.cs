@@ -1016,7 +1016,7 @@ namespace Akka.Remote
             Inbound = handleOrActive != null;
             _ackDeadline = NewAckDeadline();
             _handle = handleOrActive;
-            _remoteMetrics = RemoteMetricsExtension.Create(Context.System.AsInstanceOf<ExtendedActorSystem>());
+            _remoteMetrics = RemoteMetrics.Create(Context.System);
 
             if (_handle == null)
             {

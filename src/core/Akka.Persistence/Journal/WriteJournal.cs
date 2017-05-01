@@ -17,7 +17,7 @@ namespace Akka.Persistence.Journal
     /// </summary>
     public abstract class WriteJournalBase : ActorBase
     {
-        private readonly PersistenceExtension _persistence;
+        private readonly Persistence _persistence;
         private readonly EventAdapters _eventAdapters;
 
         /// <summary>
@@ -25,7 +25,7 @@ namespace Akka.Persistence.Journal
         /// </summary>
         protected WriteJournalBase()
         {
-            _persistence = Persistence.Instance.Apply(Context.System);
+            _persistence = Persistence.Get(Context.System);
             _eventAdapters = _persistence.AdaptersFor(Self);
         }
 

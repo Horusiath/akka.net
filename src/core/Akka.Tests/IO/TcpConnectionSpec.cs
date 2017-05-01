@@ -136,7 +136,7 @@ namespace Akka.Tests.IO
         {
             new EstablishedConnectionTest(this).Run(x =>
             {
-                var bufferSize = Tcp.Instance.Apply(Sys).Settings.DirectBufferSize;
+                var bufferSize = Tcp.Get(Sys).Settings.DirectBufferSize;
                 var dataSize = bufferSize + 150;
                 var bigData = new byte[dataSize];
                 var buffer = ByteBuffer.Wrap(bigData);
@@ -804,7 +804,7 @@ namespace Akka.Tests.IO
 
         class TestTcpOutgoingConnection : TcpOutgoingConnection
         {
-            public TestTcpOutgoingConnection(TcpExt tcp, IChannelRegistry channelRegistry, IActorRef commander, Tcp.Connect connect)
+            public TestTcpOutgoingConnection(Tcp tcp, IChannelRegistry channelRegistry, IActorRef commander, Tcp.Connect connect)
                 : base(tcp, channelRegistry, commander, connect) 
             { }
             protected override void PostRestart(Exception reason)
@@ -814,7 +814,7 @@ namespace Akka.Tests.IO
         }
         public TestActorRef<TcpOutgoingConnection> CreateConnectionActorWithoutRegistration(EndPoint serverAddress, IEnumerable<Inet.SocketOption> options = null, TimeSpan? timeout = null, bool pullMode = false)
         {
-            var tcp = Tcp.Instance.Apply(_system);
+            var tcp = Tcp.Get(_system);
 
             return new TestActorRef<TcpOutgoingConnection>(_system, Props.Create(() =>
                         new TestTcpOutgoingConnection(tcp, this, UserHandler.Ref, new Tcp.Connect(serverAddress, null, options, timeout, pullMode))));

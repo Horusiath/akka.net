@@ -22,7 +22,7 @@ namespace Akka.IO
     /// </summary>
     class UdpListener : WithUdpSend, IRequiresMessageQueue<IUnboundedMessageQueueSemantics>
     {
-        private readonly UdpExt _udp;
+        private readonly Udp _udp;
         private readonly IChannelRegistry _channelRegistry;
         private readonly IActorRef _bindCommander;
         private readonly Udp.Bind _bind;
@@ -39,7 +39,7 @@ namespace Akka.IO
         /// <param name="channelRegistry">TBD</param>
         /// <param name="bindCommander">TBD</param>
         /// <param name="bind">TBD</param>
-        public UdpListener(UdpExt udp, IChannelRegistry channelRegistry, IActorRef bindCommander, Udp.Bind bind)
+        public UdpListener(Udp udp, IChannelRegistry channelRegistry, IActorRef bindCommander, Udp.Bind bind)
         {
             _udp = udp;
             _channelRegistry = channelRegistry;
@@ -89,7 +89,7 @@ namespace Akka.IO
         /// <summary>
         /// TBD
         /// </summary>
-        protected override UdpExt Udp
+        protected override Udp Udp
         {
             get { return _udp; }
         }

@@ -135,7 +135,7 @@ namespace Akka.Remote.Tests
 
                     // it must not quarantine the current connection
                     RARP.For(Sys)
-                        .Provider.Transport.Quarantine(remoteAddress, AddressUidExtension.Uid(remoteSystem) + 1);
+                        .Provider.Transport.Quarantine(remoteAddress, AddressUid.GetUid(remoteSystem) + 1);
 
                     // the message from local to remote should reuse passive inbound connection
                     Sys.ActorSelection(new RootActorPath(remoteAddress) / "user" / "stoppable").Tell(new Identify(1));

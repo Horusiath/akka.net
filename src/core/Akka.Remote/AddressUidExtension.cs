@@ -11,36 +11,6 @@ using Akka.Util;
 namespace Akka.Remote
 {
     /// <summary>
-    /// <see cref="IExtension"/> provider for <see cref="AddressUid"/>
-    /// </summary>
-    public class AddressUidExtension : ExtensionIdProvider<AddressUid>
-    {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override AddressUid CreateExtension(ExtendedActorSystem system)
-        {
-            return new AddressUid();
-        }
-
-        #region Static methods
-
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public static int Uid(ActorSystem system)
-        {
-            return system.WithExtension<AddressUid, AddressUidExtension>().Uid;
-        }
-
-        #endregion
-    }
-
-    /// <summary>
     /// Extension that holds a UID that is assigned as a random 'Int'.
     /// 
     /// The UID is intended to be used together with an <see cref="Address"/> to be
@@ -48,6 +18,20 @@ namespace Akka.Remote
     /// </summary>
     public class AddressUid : IExtension
     {
+        #region Static methods
+
+        /// <summary>
+        /// TBD
+        /// </summary>
+        /// <param name="system">TBD</param>
+        /// <returns>TBD</returns>
+        public static int GetUid(ActorSystem system)
+        {
+            return system.WithExtension<AddressUid>().Uid;
+        }
+
+        #endregion
+
         /// <summary>
         /// TBD
         /// </summary>

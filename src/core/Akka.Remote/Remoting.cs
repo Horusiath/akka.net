@@ -42,7 +42,7 @@ namespace Akka.Remote
     /// (used for forcing all /system level remoting actors onto a dedicated dispatcher)
     /// </summary>
 // ReSharper disable once InconsistentNaming
-    internal sealed class RARP : ExtensionIdProvider<RARP>,  IExtension
+    internal sealed class RARP :  IExtension
     {
         //this is why this extension is called "RARP"
         private readonly RemoteActorRefProvider _provider;
@@ -66,16 +66,7 @@ namespace Akka.Remote
         {
             return _provider.RemoteSettings.ConfigureDispatcher(props);
         }
-
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override RARP CreateExtension(ExtendedActorSystem system)
-        {
-            return new RARP(system.Provider.AsInstanceOf<RemoteActorRefProvider>());
-        }
+        
 
         /// <summary>
         /// TBD
@@ -94,7 +85,7 @@ namespace Akka.Remote
         /// <returns>TBD</returns>
         public static RARP For(ActorSystem system)
         {
-            return system.WithExtension<RARP, RARP>();
+            return system.WithExtension<RARP>();
         }
 
         #endregion

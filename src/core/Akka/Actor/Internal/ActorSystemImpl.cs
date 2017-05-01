@@ -28,7 +28,7 @@ namespace Akka.Actor.Internal
     public class ActorSystemImpl : ExtendedActorSystem
     {
         private IActorRef _logDeadLetterListener;
-        private readonly ConcurrentDictionary<Type, Lazy<object>> _extensions = new ConcurrentDictionary<Type, Lazy<object>>();
+        private readonly ConcurrentDictionary<Type, IExtension> _extensions = new ConcurrentDictionary<Type, IExtension>();
 
         private ILoggingAdapter _log;
         private IActorRefProvider _provider;
@@ -71,12 +71,12 @@ namespace Akka.Actor.Internal
 
             _name = name;            
             ConfigureSettings(config);
+            UseDependencyResolver(new DefaultDependencyResolver());
             ConfigureEventStream();
             ConfigureLoggers();
             ConfigureScheduler();
             ConfigureProvider();
             ConfigureTerminationCallbacks();
-            UseDependencyResolver(new DefaultDependencyResolver());
             ConfigureSerialization();
             ConfigureMailboxes();
             ConfigureDispatchers();
@@ -275,11 +275,11 @@ namespace Akka.Actor.Internal
 
         private void LoadExtensions()
         {
-            var extensions = new List<IExtensionId>();
+            var extensions = new List<IExtension>();
             foreach(var extensionFqn in _settings.Config.GetStringList("akka.extensions"))
             {
                 var extensionType = Type.GetType(extensionFqn);
-                if(extensionType == null || !typeof(IExtensionId).IsAssignableFrom(extensionType) || extensionType.IsAbstract || !extensionType.IsClass)
+                if(extensionType == null || !typeof(IExtension).IsAssignableFrom(extensionType) || extensionType.IsAbstract || !extensionType.IsClass)
                 {
                     _log.Error("[{0}] is not an 'ExtensionId', skipping...", extensionFqn);
                     continue;
@@ -287,7 +287,7 @@ namespace Akka.Actor.Internal
 
                 try
                 {
-                    var extension = (IExtensionId)Activator.CreateInstance(extensionType);
+                    var extension = (IExtension)DependencyResolver.Resolve(extensionType);
                     extensions.Add(extension);
                 }
                 catch(Exception ex)
@@ -300,7 +300,7 @@ namespace Akka.Actor.Internal
             ConfigureExtensions(extensions);
         }
 
-        private void ConfigureExtensions(IEnumerable<IExtensionId> extensionIdProviders)
+        private void ConfigureExtensions(IEnumerable<IExtension> extensionIdProviders)
         {
             foreach(var extensionId in extensionIdProviders)
             {
@@ -313,24 +313,12 @@ namespace Akka.Actor.Internal
         /// </summary>
         /// <param name="extension">The extension to register with this actor system</param>
         /// <returns>The extension registered with this actor system</returns>
-        public override object RegisterExtension(IExtensionId extension)
+        public override object RegisterExtension(IExtension extension)
         {
             if (extension == null) return null;
 
-            _extensions.GetOrAdd(extension.ExtensionType, t => new Lazy<object>(() => extension.CreateExtension(this), LazyThreadSafetyMode.ExecutionAndPublication));
+            _extensions.GetOrAdd(extension.GetType(), t => extension);
 
-            return extension.Get(this);
-        }
-
-        /// <summary>
-        /// Retrieves the specified extension that is registered to this actor system.
-        /// </summary>
-        /// <param name="extensionId">The extension to retrieve</param>
-        /// <returns>The specified extension registered to this actor system</returns>
-        public override object GetExtension(IExtensionId extensionId)
-        {
-            object extension;
-            TryGetExtension(extensionId.ExtensionType, out extension);
             return extension;
         }
 
@@ -340,11 +328,9 @@ namespace Akka.Actor.Internal
         /// <param name="extensionType">The type of extension to retrieve</param>
         /// <param name="extension">The extension that is retrieved if successful</param>
         /// <returns><c>true</c> if the retrieval was successful; otherwise <c>false</c>.</returns>
-        public override bool TryGetExtension(Type extensionType, out object extension)
+        public override bool TryGetExtension(Type extensionType, out IExtension extension)
         {
-            Lazy<object> lazyExtension;
-            var wasFound = _extensions.TryGetValue(extensionType, out lazyExtension);
-            extension = wasFound ? lazyExtension.Value : null;
+            var wasFound = _extensions.TryGetValue(extensionType, out extension);
             return wasFound;
         }
 
@@ -356,12 +342,12 @@ namespace Akka.Actor.Internal
         /// <returns><c>true</c> if the retrieval was successful; otherwise <c>false</c>.</returns>
         public override bool TryGetExtension<T>(out T extension)
         {
-            Lazy<object> lazyExtension;
-            var wasFound = _extensions.TryGetValue(typeof(T), out lazyExtension);
-            extension = wasFound ? lazyExtension.Value as T : null;
+            IExtension ext;
+            var wasFound = _extensions.TryGetValue(typeof(T), out ext);
+            extension = wasFound ? (T) ext : default(T);
             return wasFound;
         }
-
+        
         /// <summary>
         /// Retrieves an extension with the specified type that is registered to this actor system.
         /// </summary>

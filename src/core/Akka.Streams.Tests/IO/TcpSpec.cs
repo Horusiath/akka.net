@@ -372,7 +372,7 @@ namespace Akka.Streams.Tests.IO
             var tcpReadProbe1 = new TcpReadProbe(this);
             var tcpWriteProbe2 = new TcpWriteProbe(this);
             var tcpReadProbe2 = new TcpReadProbe(this);
-            var outgoingConnection = new Tcp().CreateExtension(Sys as ExtendedActorSystem).OutgoingConnection(server.Address);
+            var outgoingConnection = Sys.TcpStream().OutgoingConnection(server.Address);
 
             var conn1F = Source.FromPublisher(tcpWriteProbe1.PublisherProbe)
                     .ViaMaterialized(outgoingConnection, Keep.Both)

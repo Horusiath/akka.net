@@ -34,7 +34,7 @@ namespace Akka.IO
         /// <param name="bindHandler">TBD</param>
         /// <param name="options">TBD</param>
         /// <param name="readThrottling">TBD</param>
-        public TcpIncomingConnection(TcpExt tcp, 
+        public TcpIncomingConnection(Tcp tcp, 
                                      SocketChannel channel, 
                                      IChannelRegistry registry, 
                                      IActorRef bindHandler,

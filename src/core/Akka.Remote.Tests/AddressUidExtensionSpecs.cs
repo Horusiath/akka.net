@@ -27,10 +27,10 @@ namespace Akka.Remote.Tests
             var parallelOps = 1000;
             var loop = Parallel.For(0, parallelOps, i =>
             {
-                values.Add(AddressUidExtension.Uid(Sys));
+                values.Add(AddressUid.GetUid(Sys));
             });
             SpinWait.SpinUntil(() => loop.IsCompleted);
-            Assert.True(values.All(x => x == AddressUidExtension.Uid(Sys)));
+            Assert.True(values.All(x => x == AddressUid.GetUid(Sys)));
         }
 
         [Fact]
@@ -39,8 +39,8 @@ namespace Akka.Remote.Tests
             var sys2 = ActorSystem.Create("Sys2");
             try
             {
-                var uid1 = AddressUidExtension.Uid(Sys);
-                var uid2 = AddressUidExtension.Uid(sys2);
+                var uid1 = AddressUid.GetUid(Sys);
+                var uid2 = AddressUid.GetUid(sys2);
                 Assert.NotEqual(uid1, uid2);
             }
             finally

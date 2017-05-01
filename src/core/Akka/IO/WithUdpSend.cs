@@ -36,7 +36,7 @@ namespace Akka.IO
         /// <summary>
         /// TBD
         /// </summary>
-        protected abstract UdpExt Udp { get; }
+        protected abstract Udp Udp { get; }
 
         /// <summary>
         /// TBD

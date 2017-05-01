@@ -30,7 +30,7 @@ namespace Akka.IO
         /// <param name="channelRegistry">TBD</param>
         /// <param name="commander">TBD</param>
         /// <param name="connect">TBD</param>
-        public TcpOutgoingConnection(TcpExt tcp, IChannelRegistry channelRegistry, IActorRef commander, Tcp.Connect connect)
+        public TcpOutgoingConnection(Tcp tcp, IChannelRegistry channelRegistry, IActorRef commander, Tcp.Connect connect)
             : base(tcp, SocketChannel.Open().ConfigureBlocking(false), connect.PullMode)
         {
             _channelRegistry = channelRegistry;

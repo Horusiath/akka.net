@@ -72,7 +72,7 @@ namespace Akka.IO
     partial class TcpListener : ActorBase, IRequiresMessageQueue<IUnboundedMessageQueueSemantics>
     {
         private readonly IActorRef _selectorRouter;
-        private readonly TcpExt _tcp;
+        private readonly Tcp _tcp;
         private readonly IActorRef _bindCommander;
         private readonly Tcp.Bind _bind;
         private readonly SocketChannel _channel;
@@ -88,7 +88,7 @@ namespace Akka.IO
         /// <param name="channelRegistry">TBD</param>
         /// <param name="bindCommander">TBD</param>
         /// <param name="bind">TBD</param>
-        public TcpListener(IActorRef selectorRouter, TcpExt tcp, IChannelRegistry channelRegistry, IActorRef bindCommander,
+        public TcpListener(IActorRef selectorRouter, Tcp tcp, IChannelRegistry channelRegistry, IActorRef bindCommander,
             Tcp.Bind bind)
         {
             _selectorRouter = selectorRouter;

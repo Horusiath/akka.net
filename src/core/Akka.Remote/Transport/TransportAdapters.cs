@@ -28,37 +28,7 @@ namespace Akka.Remote.Transport
         /// <returns>TBD</returns>
         Transport Create(Transport wrappedTransport, ExtendedActorSystem system);
     }
-
-    /// <summary>
-    /// TBD
-    /// </summary>
-    internal class TransportAdaptersExtension : ExtensionIdProvider<TransportAdapters>
-    {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override TransportAdapters CreateExtension(ExtendedActorSystem system)
-        {
-            return new TransportAdapters((ActorSystemImpl) system);
-        }
-
-        #region Static methods
-
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public static TransportAdapters For(ActorSystem system)
-        {
-            return system.WithExtension<TransportAdapters, TransportAdaptersExtension>();
-        }
-
-        #endregion
-    }
-
+    
     /// <summary>
     /// INTERNAL API
     /// 
@@ -66,6 +36,8 @@ namespace Akka.Remote.Transport
     /// </summary>
     internal class TransportAdapters : IExtension
     {
+        public static TransportAdapters For(ActorSystem system) => system.WithExtension<TransportAdapters>();
+
         /// <summary>
         /// TBD
         /// </summary>

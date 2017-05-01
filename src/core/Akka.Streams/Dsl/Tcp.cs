@@ -19,15 +19,9 @@ namespace Akka.Streams.Dsl
     /// <summary>
     /// TBD
     /// </summary>
-    public class Tcp : ExtensionIdProvider<TcpExt>
+    public class Tcp : IExtension
     {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override TcpExt CreateExtension(ExtendedActorSystem system) => new TcpExt(system);
-
+        #region messages
         /// <summary>
         /// Represents a successful TCP server binding.
         /// </summary>
@@ -108,14 +102,14 @@ namespace Akka.Streams.Dsl
         /// <summary>
         /// Represents a prospective outgoing TCP connection.
         /// </summary>
-        public struct OutgoingConnection
+        public struct OutgoingConnectionDefinition
         {
             /// <summary>
             /// TBD
             /// </summary>
             /// <param name="remoteAddress">TBD</param>
             /// <param name="localAddress">TBD</param>
-            public OutgoingConnection(EndPoint remoteAddress, EndPoint localAddress)
+            public OutgoingConnectionDefinition(EndPoint remoteAddress, EndPoint localAddress)
             {
                 LocalAddress = localAddress;
                 RemoteAddress = remoteAddress;
@@ -131,20 +125,15 @@ namespace Akka.Streams.Dsl
             /// </summary>
             public readonly EndPoint RemoteAddress;
         }
-    }
+        #endregion
 
-    /// <summary>
-    /// TBD
-    /// </summary>
-    public class TcpExt : IExtension
-    {
         private readonly ExtendedActorSystem _system;
 
         /// <summary>
         /// TBD
         /// </summary>
         /// <param name="system">TBD</param>
-        public TcpExt(ExtendedActorSystem system)
+        public Tcp(ExtendedActorSystem system)
         {
             _system = system;
             BindShutdownTimeout = ActorMaterializer.Create(system).Settings.SubscriptionTimeoutSettings.Timeout;
@@ -237,7 +226,7 @@ namespace Akka.Streams.Dsl
         /// <param name="connectionTimeout">TBD</param>
         /// <param name="idleTimeout">TBD</param>
         /// <returns>TBD</returns>
-        public Flow<ByteString, ByteString, Task<Tcp.OutgoingConnection>> OutgoingConnection(EndPoint remoteAddress, EndPoint localAddress = null,
+        public Flow<ByteString, ByteString, Task<Tcp.OutgoingConnectionDefinition>> OutgoingConnection(EndPoint remoteAddress, EndPoint localAddress = null,
             IImmutableList<Inet.SocketOption> options = null, bool halfClose = true, TimeSpan? connectionTimeout = null, TimeSpan? idleTimeout = null)
         {
             connectionTimeout = connectionTimeout ?? TimeSpan.MaxValue;
@@ -259,7 +248,7 @@ namespace Akka.Streams.Dsl
         /// <param name="host">TBD</param>
         /// <param name="port">TBD</param>
         /// <returns>TBD</returns>
-        public Flow<ByteString, ByteString, Task<Tcp.OutgoingConnection>> OutgoingConnection(string host, int port)
+        public Flow<ByteString, ByteString, Task<Tcp.OutgoingConnectionDefinition>> OutgoingConnection(string host, int port)
             => OutgoingConnection(new DnsEndPoint(host, port));
     }
 
@@ -273,6 +262,6 @@ namespace Akka.Streams.Dsl
         /// </summary>
         /// <param name="system">TBD</param>
         /// <returns>TBD</returns>
-        public static TcpExt TcpStream(this ActorSystem system) => system.WithExtension<TcpExt, Tcp>();
+        public static Tcp TcpStream(this ActorSystem system) => system.WithExtension<Tcp>();
     }
 }

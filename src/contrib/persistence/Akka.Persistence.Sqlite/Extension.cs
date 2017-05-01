@@ -70,7 +70,7 @@ namespace Akka.Persistence.Sqlite
         /// <returns>TBD</returns>
         public static SqlitePersistence Get(ActorSystem system)
         {
-            return system.WithExtension<SqlitePersistence, SqlitePersistenceProvder>();
+            return system.WithExtension<SqlitePersistence>();
         }
 
         /// <summary>
@@ -94,22 +94,6 @@ namespace Akka.Persistence.Sqlite
 
             DefaultJournalConfig = defaultConfig.GetConfig(SqliteJournalSettings.ConfigPath);
             DefaultSnapshotConfig = defaultConfig.GetConfig(SqliteSnapshotSettings.ConfigPath);
-        }
-    }
-
-    /// <summary>
-    /// TBD
-    /// </summary>
-    public class SqlitePersistenceProvder : ExtensionIdProvider<SqlitePersistence>
-    {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override SqlitePersistence CreateExtension(ExtendedActorSystem system)
-        {
-            return new SqlitePersistence(system);
         }
     }
 }

@@ -141,7 +141,7 @@ namespace Akka.Cluster.Sharding.Tests
         public void ClusterSharding_should_setup_shared_journal()
         {
             // start the Persistence extension
-            Persistence.Persistence.Instance.Apply(Sys);
+            Persistence.Persistence.Get(Sys);
             RunOn(() =>
             {
                 Sys.ActorOf(Props.Create<MemoryJournal>(), "store");

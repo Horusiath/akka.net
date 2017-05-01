@@ -27,7 +27,7 @@ namespace Akka.IO
     /// </summary>
     internal abstract class TcpConnection : ActorBase, IRequiresMessageQueue<IUnboundedMessageQueueSemantics>
     {
-        private readonly TcpExt _tcp;
+        private readonly Tcp _tcp;
         private readonly SocketChannel _channel;
         private readonly bool _pullMode;
         private readonly ILoggingAdapter _log = Context.GetLogger();
@@ -35,7 +35,7 @@ namespace Akka.IO
         /// <summary>
         /// TBD
         /// </summary>
-        protected TcpExt Tcp
+        protected Tcp Tcp
         {
             get { return _tcp; }
         }
@@ -62,7 +62,7 @@ namespace Akka.IO
         /// <param name="tcp">TBD</param>
         /// <param name="channel">TBD</param>
         /// <param name="pullMode">TBD</param>
-        protected TcpConnection(TcpExt tcp, SocketChannel channel, bool pullMode)
+        protected TcpConnection(Tcp tcp, SocketChannel channel, bool pullMode)
         {
             _tcp = tcp;
             _channel = channel;

@@ -41,7 +41,7 @@ namespace Akka.IO
         {
             var ret = Cached(name);
             if (ret == null)
-                Dns.Instance.Apply(system).Manager.Tell(new Dns.Resolve(name), sender);
+                Dns.Get(system).Manager.Tell(new Dns.Resolve(name), sender);
             return ret;
         }
     }
@@ -49,13 +49,8 @@ namespace Akka.IO
     /// <summary>
     /// TBD
     /// </summary>
-    public class Dns : ExtensionIdProvider<DnsExt>
+    public class Dns : IOExtension
     {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        public static readonly Dns Instance = new Dns();
-
         /// <summary>
         /// TBD
         /// </summary>
@@ -157,7 +152,7 @@ namespace Akka.IO
         /// <returns>TBD</returns>
         public static Resolved Cached(string name, ActorSystem system)
         {
-            return Instance.Apply(system).Cache.Cached(name);
+            return Dns.Get(system).Cache.Cached(name);
         }
 
         /// <summary>
@@ -169,25 +164,9 @@ namespace Akka.IO
         /// <returns>TBD</returns>
         public static Resolved ResolveName(string name, ActorSystem system, IActorRef sender)
         {
-            return Instance.Apply(system).Cache.Resolve(name, system, sender);
+            return Dns.Get(system).Cache.Resolve(name, system, sender);
         }
 
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override DnsExt CreateExtension(ExtendedActorSystem system)
-        {
-            return new DnsExt(system);
-        }
-    }
-
-    /// <summary>
-    /// TBD
-    /// </summary>
-    public class DnsExt : IOExtension
-    {
         /// <summary>
         /// TBD
         /// </summary>
@@ -230,7 +209,7 @@ namespace Akka.IO
         /// TBD
         /// </summary>
         /// <param name="system">TBD</param>
-        public DnsExt(ExtendedActorSystem system)
+        public Dns(ExtendedActorSystem system)
         {
             _system = system;
             Settings = new DnsSettings(system.Settings.Config.GetConfig("akka.io.dns"));
@@ -277,5 +256,10 @@ namespace Akka.IO
         /// TBD
         /// </summary>
         public IDnsProvider Provider { get; private set; }
+
+        public static Dns Get(ActorSystem system)
+        {
+            return system.WithExtension<Dns>();
+        }
     }
 }

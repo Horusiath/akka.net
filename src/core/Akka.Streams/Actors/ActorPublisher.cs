@@ -195,7 +195,7 @@ namespace Akka.Streams.Actors
     /// <typeparam name="T">TBD</typeparam>
     public abstract class ActorPublisher<T> : ActorBase
     {
-        private readonly ActorPublisherState _state = ActorPublisherState.Instance.Apply(Context.System);
+        private readonly ActorPublisherState _state = ActorPublisherState.Get(Context.System);
         private long _demand;
         private LifecycleState _lifecycleState = LifecycleState.PreSubscriber;
         private ISubscriber<T> _subscriber;
@@ -749,7 +749,7 @@ namespace Akka.Streams.Actors
     /// <summary>
     /// TBD
     /// </summary>
-    internal class ActorPublisherState : ExtensionIdProvider<ActorPublisherState>, IExtension
+    internal class ActorPublisherState : IExtension
     {
         /// <summary>
         /// TBD
@@ -826,6 +826,7 @@ namespace Akka.Streams.Actors
         /// </summary>
         /// <param name="system">TBD</param>
         /// <returns>TBD</returns>
-        public override ActorPublisherState CreateExtension(ExtendedActorSystem system) => new ActorPublisherState();
+        public static ActorPublisherState Get(ActorSystem system) => system
+            .WithExtension<ActorPublisherState>();
     }
 }

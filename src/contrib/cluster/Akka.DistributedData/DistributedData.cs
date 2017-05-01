@@ -41,7 +41,7 @@ namespace Akka.DistributedData
         /// <param name="system">TBD</param>
         /// <returns>TBD</returns>
         public static DistributedData Get(ActorSystem system) =>
-            system.WithExtension<DistributedData, DistributedDataProvider>();
+            system.WithExtension<DistributedData>();
 
         /// <summary>
         /// TBD
@@ -72,20 +72,7 @@ namespace Akka.DistributedData
         public static Config DefaultConfig() => 
             ConfigurationFactory.FromResource<DistributedData>("Akka.DistributedData.reference.conf");
     }
-
-    /// <summary>
-    /// TBD
-    /// </summary>
-    public class DistributedDataProvider : ExtensionIdProvider<DistributedData>
-    {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override DistributedData CreateExtension(ExtendedActorSystem system) => new DistributedData(system);
-    }
-
+    
     public static class DistributedDataExtensions
     {
         /// <summary>

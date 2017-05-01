@@ -21,7 +21,7 @@ namespace Akka.IO
     /// </summary>
     class UdpSender : WithUdpSend, IRequiresMessageQueue<IUnboundedMessageQueueSemantics>
     {
-        private readonly UdpExt _udp;
+        private readonly Udp _udp;
         private readonly IActorRef _commander;
         private readonly IEnumerable<Inet.SocketOption> _options;
 
@@ -36,7 +36,7 @@ namespace Akka.IO
         /// <param name="channelRegistry">TBD</param>
         /// <param name="commander">TBD</param>
         /// <param name="options">TBD</param>
-        public UdpSender(UdpExt udp, IChannelRegistry channelRegistry, IActorRef commander, IEnumerable<Inet.SocketOption> options)
+        public UdpSender(Udp udp, IChannelRegistry channelRegistry, IActorRef commander, IEnumerable<Inet.SocketOption> options)
         {
             _udp = udp;
             _commander = commander;
@@ -58,7 +58,7 @@ namespace Akka.IO
         /// <summary>
         /// TBD
         /// </summary>
-        protected override UdpExt Udp
+        protected override Udp Udp
         {
             get { return _udp; }
         }

@@ -21,7 +21,7 @@ namespace Akka.IO
     /// </summary>
     internal class UdpConnection : ActorBase, IRequiresMessageQueue<IUnboundedMessageQueueSemantics>
     {
-        private readonly UdpConnectedExt _udpConn;
+        private readonly UdpConnected _udpConn;
         private readonly IChannelRegistry _channelRegistry;
         private readonly IActorRef _commander;
         private readonly UdpConnected.Connect _connect;
@@ -37,7 +37,7 @@ namespace Akka.IO
         /// <param name="channelRegistry">TBD</param>
         /// <param name="commander">TBD</param>
         /// <param name="connect">TBD</param>
-        public UdpConnection(UdpConnectedExt udpConn, 
+        public UdpConnection(UdpConnected udpConn, 
                              IChannelRegistry channelRegistry, 
                              IActorRef commander, 
                              UdpConnected.Connect connect)

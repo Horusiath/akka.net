@@ -517,7 +517,7 @@ namespace Akka.Persistence.Sql.Common.Journal
         protected BatchingSqlJournal(BatchingSqlJournalSetup setup)
         {
             Setup = setup;
-            CanPublish = Persistence.Instance.Apply(Context.System).Settings.Internal.PublishPluginCommands;
+            CanPublish = Persistence.Get(Context.System).Settings.Internal.PublishPluginCommands;
 
             _persistenceIdSubscribers = new Dictionary<string, HashSet<IActorRef>>();
             _tagSubscribers = new Dictionary<string, HashSet<IActorRef>>();

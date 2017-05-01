@@ -22,22 +22,6 @@ using Akka.Util.Internal;
 namespace Akka.Cluster
 {
     /// <summary>
-    /// This class represents an <see cref="ActorSystem"/> provider used to create the cluster extension.
-    /// </summary>
-    public class ClusterExtension : ExtensionIdProvider<Cluster>
-    {
-        /// <summary>
-        /// Creates the cluster extension using a given actor system.
-        /// </summary>
-        /// <param name="system">The actor system to use when creating the extension.</param>
-        /// <returns>The extension created using the given actor system.</returns>
-        public override Cluster CreateExtension(ExtendedActorSystem system)
-        {
-            return new Cluster((ActorSystemImpl)system);
-        }
-    }
-
-    /// <summary>
     /// <para>
     /// This class represents an <see cref="ActorSystem"/> extension used to create, monitor and manage
     /// a cluster of member nodes hosted within the actor system.
@@ -60,7 +44,7 @@ namespace Akka.Cluster
         /// <returns>The extension retrieved from the given actor system.</returns>
         public static Cluster Get(ActorSystem system)
         {
-            return system.WithExtension<Cluster, ClusterExtension>();
+            return system.WithExtension<Cluster>();
         }
 
         /// <summary>
@@ -89,7 +73,7 @@ namespace Akka.Cluster
         /// <exception cref="ConfigurationException">
         /// This exception is thrown if the <paramref name="system"/> does not have a <see cref="ClusterActorRefProvider"/> enabled in the configuration.
         /// </exception>
-        public Cluster(ActorSystemImpl system)
+        public Cluster(ExtendedActorSystem system)
         {
             System = system;
             Settings = new ClusterSettings(system.Settings.Config, system.Name);
@@ -98,7 +82,7 @@ namespace Akka.Cluster
             if (provider == null)
                 throw new ConfigurationException(
                     $"ActorSystem {system} needs to have a 'ClusterActorRefProvider' enabled in the configuration, currently uses {system.Provider.GetType().FullName}");
-            SelfUniqueAddress = new UniqueAddress(provider.Transport.DefaultAddress, AddressUidExtension.Uid(system));
+            SelfUniqueAddress = new UniqueAddress(provider.Transport.DefaultAddress, AddressUid.GetUid(system));
 
             _log = Logging.GetLogger(system, "Cluster");
 

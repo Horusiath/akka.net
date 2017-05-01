@@ -16,13 +16,13 @@ namespace Akka.IO
     /// </summary>
     class UdpConnectedManager : SelectionHandler.SelectorBasedManager
     {
-        private readonly UdpConnectedExt _udpConn;
+        private readonly UdpConnected _udpConn;
 
         /// <summary>
         /// TBD
         /// </summary>
         /// <param name="udpConn">TBD</param>
-        public UdpConnectedManager(UdpConnectedExt udpConn)
+        public UdpConnectedManager(UdpConnected udpConn)
             : base(udpConn.Settings, udpConn.Settings.NrOfSelectors)
         {
             _udpConn = udpConn;

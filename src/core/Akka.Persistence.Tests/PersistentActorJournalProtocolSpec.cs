@@ -271,21 +271,7 @@ namespace Akka.Persistence.Tests
                 });
             }
         }
-
-        public class JournalProbeExtension : ExtensionIdProvider<JournalProbe>
-        {
-            public static readonly JournalProbeExtension Instance = new JournalProbeExtension();
-
-            private JournalProbeExtension()
-            {
-            }
-
-            public override JournalProbe CreateExtension(ExtendedActorSystem system)
-            {
-                return new JournalProbe(system);
-            }
-        }
-
+        
         public class JournalProbe : IExtension
         {
             public TestProbe Probe { get; private set; }
@@ -304,7 +290,7 @@ namespace Akka.Persistence.Tests
 
             public JournalPuppet()
             {
-                _ref = JournalProbeExtension.Instance.Apply(Context.System).Ref;
+                _ref = Context.System.WithExtension<JournalProbe>().Ref;
             }
 
             protected override bool Receive(object message)
@@ -326,7 +312,7 @@ akka.persistence.snapshot-store.plugin = ""akka.persistence.no-snapshot-store"""
 
         public PersistentActorJournalProtocolSpec() : base(Config)
         {
-            _journal = JournalProbeExtension.Instance.Apply(Sys).Probe;
+            _journal = Sys.WithExtension<JournalProbe>().Probe;
         }
 
         public class Msgs

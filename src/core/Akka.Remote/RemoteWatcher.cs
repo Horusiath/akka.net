@@ -388,7 +388,7 @@ namespace Akka.Remote
         readonly TimeSpan _heartbeatExpectedResponseAfter;
         readonly IScheduler _scheduler = Context.System.Scheduler;
         readonly RemoteActorRefProvider _remoteProvider;
-        readonly HeartbeatRsp _selfHeartbeatRspMsg = new HeartbeatRsp(AddressUidExtension.Uid(Context.System));
+        readonly HeartbeatRsp _selfHeartbeatRspMsg = new HeartbeatRsp(AddressUid.GetUid(Context.System));
        
         /// <summary>
         ///  Actors that this node is watching, map of watchee --> Set(watchers)

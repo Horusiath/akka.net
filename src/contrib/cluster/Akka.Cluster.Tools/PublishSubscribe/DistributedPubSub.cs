@@ -16,23 +16,7 @@ namespace Akka.Cluster.Tools.PublishSubscribe
     /// Marker trait for remote messages with special serializer.
     /// </summary>
     public interface IDistributedPubSubMessage { }
-
-    /// <summary>
-    /// TBD
-    /// </summary>
-    public sealed class DistributedPubSubExtensionProvider : ExtensionIdProvider<DistributedPubSub>
-    {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override DistributedPubSub CreateExtension(ExtendedActorSystem system)
-        {
-            return new DistributedPubSub(system);
-        }
-    }
-
+    
     /// <summary>
     /// Extension that starts a <see cref="DistributedPubSubMediator"/> actor with settings 
     /// defined in config section `akka.cluster.pub-sub`.
@@ -51,7 +35,7 @@ namespace Akka.Cluster.Tools.PublishSubscribe
         /// <returns>TBD</returns>
         public static DistributedPubSub Get(ActorSystem system)
         {
-            return system.WithExtension<DistributedPubSub, DistributedPubSubExtensionProvider>();
+            return system.WithExtension<DistributedPubSub>();
         }
 
         /// <summary>

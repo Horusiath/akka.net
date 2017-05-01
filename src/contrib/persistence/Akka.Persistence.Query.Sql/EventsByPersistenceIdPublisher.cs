@@ -50,7 +50,7 @@ namespace Akka.Persistence.Query.Sql
             WriteJournalPluginId = writeJournalPluginId;
             Buffer = new DeliveryBuffer<EventEnvelope>(OnNext);
 
-            JournalRef = Persistence.Instance.Apply(Context.System).JournalFor(writeJournalPluginId);
+            JournalRef = Persistence.Get(Context.System).JournalFor(writeJournalPluginId);
         }
 
         protected ILoggingAdapter Log => _log ?? (_log = Context.GetLogger());

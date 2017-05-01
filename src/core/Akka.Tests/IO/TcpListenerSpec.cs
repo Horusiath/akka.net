@@ -257,7 +257,7 @@ namespace Akka.Tests.IO
 
                     _listner = Context.ActorOf(Props.Create(() =>
                         new TcpListener(test._selectorRouter.Ref,
-                            Tcp.Instance.Apply(Context.System),
+                            Tcp.Get(Context.System),
                             this,
                             test._bindCommander.Ref,
                             new Tcp.Bind(_test._handler.Ref, test._endpoint, 100, new Inet.SocketOption[]{}, pullMode)))

@@ -94,7 +94,7 @@ namespace Akka.Persistence.Tests
                   .WithFallback(Configuration("PersistentActoryRecoveryTimeoutSpec")))
         {
             // initialize journal early
-            Persistence.Instance.Apply(Sys).JournalFor("akka.persistence.journal.stepping-inmem");
+            Persistence.Get(Sys).JournalFor("akka.persistence.journal.stepping-inmem");
             AwaitAssert(() => SteppingMemoryJournal.GetRef(JournalId), TimeSpan.FromSeconds(3));
             _journal = SteppingMemoryJournal.GetRef(JournalId);
         }

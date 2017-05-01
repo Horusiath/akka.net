@@ -235,7 +235,7 @@ namespace Akka.Remote.Transport
                     var stateActorSettings = _settings;
                     var failureDetector = CreateTransportFailureDetector();
                     Context.ActorOf(RARP.For(Context.System).ConfigureDispatcher(ProtocolStateActor.InboundProps(
-                        new HandshakeInfo(stateActorLocalAddress, AddressUidExtension.Uid(Context.System)),
+                        new HandshakeInfo(stateActorLocalAddress, AddressUid.GetUid(Context.System)),
                         handle,
                         stateActorAssociationListener,
                         stateActorSettings,
@@ -264,7 +264,7 @@ namespace Akka.Remote.Transport
             var failureDetector = CreateTransportFailureDetector();
 
             Context.ActorOf(RARP.For(Context.System).ConfigureDispatcher(ProtocolStateActor.OutboundProps(
-                new HandshakeInfo(stateActorLocalAddress, AddressUidExtension.Uid(Context.System)),
+                new HandshakeInfo(stateActorLocalAddress, AddressUid.GetUid(Context.System)),
                 remoteAddress,
                 statusPromise,
                 stateActorWrappedTransport,

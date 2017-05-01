@@ -16,7 +16,7 @@ namespace Akka.IO
     /// </summary>
     public class SimpleDnsManager : ActorBase, IRequiresMessageQueue<IUnboundedMessageQueueSemantics>
     {
-        private readonly DnsExt _ext;
+        private readonly Dns _ext;
         private readonly ILoggingAdapter _log = Context.GetLogger();
         private readonly IActorRef _resolver;
         private IPeriodicCacheCleanup _cacheCleanup;
@@ -26,7 +26,7 @@ namespace Akka.IO
         /// TBD
         /// </summary>
         /// <param name="ext">TBD</param>
-        public SimpleDnsManager(DnsExt ext)
+        public SimpleDnsManager(Dns ext)
         {
             _ext = ext;
             _resolver = Context.ActorOf(Props.Create(ext.Provider.ActorClass, ext.Cache, ext.Settings.ResolverConfig)

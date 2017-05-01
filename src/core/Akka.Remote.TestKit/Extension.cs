@@ -15,31 +15,6 @@ using Akka.Util.Internal;
 namespace Akka.Remote.TestKit
 {
     /// <summary>
-    /// Access to the <see cref="TestConductor"/> extension:
-    /// 
-    /// {{{
-    /// var tc = TestConductor(system)
-    /// tc.StartController(numPlayers)
-    /// OR
-    /// tc.StartClient(conductorPort)
-    /// }}}
-    /// </summary>
-    public class TestConductorExtension : ExtensionIdProvider<TestConductor>
-    {
-        //TODO:
-        //override def lookup = TestConductor
-
-        public override TestConductor CreateExtension(ExtendedActorSystem system)
-        {
-            return new TestConductor(system);
-        }
-
-        //TODO:
-        //override def get(system: ActorSystem): TestConductorExt = super.get(system)
-        //def apply()(implicit ctx: ActorContext): TestConductorExt = apply(ctx.system)
-    }
-
-    /// <summary>
     /// This binds together the Conductor and Player in an extension
     /// ====Note====
     /// This extension requires the `akka.actor.provider`
@@ -52,7 +27,7 @@ namespace Akka.Remote.TestKit
     {
         public static TestConductor Get(ActorSystem system)
         {
-            return system.WithExtension<TestConductor, TestConductorExtension>();
+            return system.WithExtension<TestConductor>();
         }
 
         readonly TestConductorSettings _settings;

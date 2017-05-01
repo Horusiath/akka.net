@@ -142,7 +142,7 @@ namespace Akka.Persistence.Tests
         /// </summary>
         private void WriteEvents(string pid, params object[] events)
         {
-            var journalRef = Persistence.Instance.Apply(Sys).JournalFor(string.Empty);
+            var journalRef = Persistence.Get(Sys).JournalFor(string.Empty);
             var persistents = events
                 .Select(e => new Persistent(e, _seqNrCounter.GetAndIncrement(), pid, e.GetType().FullName))
                 .ToArray();

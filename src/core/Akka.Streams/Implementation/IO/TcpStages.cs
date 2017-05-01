@@ -539,7 +539,7 @@ namespace Akka.Streams.Implementation.IO
     /// INTERNAL API
     /// </summary>
     internal sealed class OutgoingConnectionStage :
-        GraphStageWithMaterializedValue<FlowShape<ByteString, ByteString>, Task<StreamTcp.OutgoingConnection>>
+        GraphStageWithMaterializedValue<FlowShape<ByteString, ByteString>, Task<StreamTcp.OutgoingConnectionDefinition>>
     {
         private readonly IActorRef _tcpManager;
         private readonly EndPoint _remoteAddress;
@@ -586,10 +586,10 @@ namespace Akka.Streams.Implementation.IO
         /// </summary>
         /// <param name="inheritedAttributes">TBD</param>
         /// <returns>TBD</returns>
-        public override ILogicAndMaterializedValue<Task<StreamTcp.OutgoingConnection>> CreateLogicAndMaterializedValue(Attributes inheritedAttributes)
+        public override ILogicAndMaterializedValue<Task<StreamTcp.OutgoingConnectionDefinition>> CreateLogicAndMaterializedValue(Attributes inheritedAttributes)
         {
             var localAddressPromise = new TaskCompletionSource<EndPoint>();
-            var outgoingConnectionPromise = new TaskCompletionSource<StreamTcp.OutgoingConnection>();
+            var outgoingConnectionPromise = new TaskCompletionSource<StreamTcp.OutgoingConnectionDefinition>();
             localAddressPromise.Task.ContinueWith(
                 t =>
                 {
@@ -598,7 +598,7 @@ namespace Akka.Streams.Implementation.IO
                     else if (t.IsFaulted)
                         outgoingConnectionPromise.TrySetException(t.Exception);
                     else
-                        outgoingConnectionPromise.TrySetResult(new StreamTcp.OutgoingConnection(_remoteAddress, t.Result));
+                        outgoingConnectionPromise.TrySetResult(new StreamTcp.OutgoingConnectionDefinition(_remoteAddress, t.Result));
                 }, TaskContinuationOptions.AttachedToParent);
 
             var logic = new TcpConnectionStage.TcpStreamLogic(Shape,
@@ -606,7 +606,7 @@ namespace Akka.Streams.Implementation.IO
                     new Tcp.Connect(_remoteAddress, _localAddress, _options, _connectionTimeout, pullMode: true),
                     localAddressPromise, _halfClose));
 
-            return new LogicAndMaterializedValue<Task<StreamTcp.OutgoingConnection>>(logic, outgoingConnectionPromise.Task);
+            return new LogicAndMaterializedValue<Task<StreamTcp.OutgoingConnectionDefinition>>(logic, outgoingConnectionPromise.Task);
         }
 
         /// <summary>

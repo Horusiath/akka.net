@@ -22,27 +22,6 @@ using static Akka.Util.Internal.TaskEx;
 namespace Akka.Actor
 {
     /// <summary>
-    /// Used to register the <see cref="CoordinatedShutdown"/> extension with a given <see cref="ActorSystem"/>.
-    /// </summary>
-    public sealed class CoordinatedShutdownExtension : ExtensionIdProvider<CoordinatedShutdown>
-    {
-        /// <summary>
-        /// Creates a new instance of the <see cref="CoordinatedShutdown"/> extension.
-        /// </summary>
-        /// <param name="system">The extended actor system.</param>
-        /// <returns>A coordinated shutdown plugin.</returns>
-        public override CoordinatedShutdown CreateExtension(ExtendedActorSystem system)
-        {
-            var conf = system.Settings.Config.GetConfig("akka.coordinated-shutdown");
-            var phases = CoordinatedShutdown.PhasesFromConfig(conf);
-            var coord = new CoordinatedShutdown(system, phases);
-            CoordinatedShutdown.InitPhaseActorSystemTerminate(system, conf, coord);
-            CoordinatedShutdown.InitClrHook(system, conf, coord);
-            return coord;
-        }
-    }
-
-    /// <summary>
     /// INTERNAL API
     /// </summary>
     internal sealed class Phase
@@ -115,6 +94,14 @@ namespace Akka.Actor
     /// </summary>
     public sealed class CoordinatedShutdown : IExtension
     {
+        public CoordinatedShutdown(ExtendedActorSystem system)
+            : this(system, CoordinatedShutdown.PhasesFromConfig(system.Settings.Config.GetConfig("akka.coordinated-shutdown")))
+        {
+            var conf = system.Settings.Config.GetConfig("akka.coordinated-shutdown");
+            CoordinatedShutdown.InitPhaseActorSystemTerminate(system, conf, this);
+            CoordinatedShutdown.InitClrHook(system, conf, this);
+        }
+
         /// <summary>
         /// Initializes a new <see cref="CoordinatedShutdown"/> instance.
         /// </summary>
@@ -136,7 +123,7 @@ namespace Akka.Actor
         /// <returns>A <see cref="CoordinatedShutdown"/> instance.</returns>
         public static CoordinatedShutdown Get(ActorSystem sys)
         {
-            return sys.WithExtension<CoordinatedShutdown, CoordinatedShutdownExtension>();
+            return sys.WithExtension<CoordinatedShutdown>();
         }
 
         public const string PhaseBeforeServiceUnbind = "before-service-unbind";

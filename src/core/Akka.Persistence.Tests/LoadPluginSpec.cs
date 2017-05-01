@@ -49,7 +49,7 @@ namespace Akka.Persistence.Tests
         [Fact]
         public void Plugin_with_config_parameter_should_be_created_with_plugin_config()
         {
-            var pluginRef = Persistence.Instance.Apply(Sys).JournalFor("akka.persistence.journal.inmem");
+            var pluginRef = Persistence.Get(Sys).JournalFor("akka.persistence.journal.inmem");
             pluginRef.Tell(GetConfig.Instance);
             ExpectMsg<Config>(c => c.GetInt("extra-property") == 17);
         }

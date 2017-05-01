@@ -52,8 +52,19 @@ namespace Akka.Persistence
     /// <summary>
     /// TBD
     /// </summary>
-    public class PersistenceExtension : IExtension
+    public class Persistence : IExtension
     {
+        /// <summary>
+        /// TBD
+        /// </summary>
+        /// <returns>TBD</returns>
+        public static Config DefaultConfig()
+        {
+            return ConfigurationFactory.FromResource<Persistence>("Akka.Persistence.persistence.conf");
+        }
+
+        public static Persistence Get(ActorSystem system) => system.WithExtension<Persistence>();
+
         private const string NoSnapshotStorePluginId = "akka.persistence.no-snapshot-store";
 
         private readonly Config _config;
@@ -77,7 +88,7 @@ namespace Akka.Persistence
         /// <exception cref="NullReferenceException">TBD
         /// This exception is thrown when the default journal plugin, <c>journal.plugin</c> is not configured.
         /// </exception>
-        public PersistenceExtension(ExtendedActorSystem system)
+        public Persistence(ExtendedActorSystem system)
         {
             _system = system;
             _system.Settings.InjectTopLevelFallback(Persistence.DefaultConfig());
@@ -296,36 +307,6 @@ namespace Akka.Persistence
             var adapters = CreateAdapters(system, configPath);
 
             return new PluginHolder(plugin, adapters, config);
-        }
-    }
-
-    /// <summary>
-    /// Persistence extension.
-    /// </summary>
-    public class Persistence : ExtensionIdProvider<PersistenceExtension>
-    {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        public static readonly Persistence Instance = new Persistence();
-
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override PersistenceExtension CreateExtension(ExtendedActorSystem system)
-        {
-            return new PersistenceExtension(system);
-        }
-
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <returns>TBD</returns>
-        public static Config DefaultConfig()
-        {
-            return ConfigurationFactory.FromResource<Persistence>("Akka.Persistence.persistence.conf");
         }
     }
 

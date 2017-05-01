@@ -20,32 +20,9 @@ namespace Akka.IO
     /// <summary>
     /// TBD
     /// </summary>
-    public class Tcp : ExtensionIdProvider<TcpExt>
+    public partial class Tcp : IOExtension
     {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        public static readonly Tcp Instance = new Tcp();
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public static IActorRef Manager(ActorSystem system)
-        {
-            return Instance.Apply(system).Manager;
-        }
-
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override TcpExt CreateExtension(ExtendedActorSystem system)
-        {
-            return new TcpExt(system);
-        }
-
+        #region Messages
         /// <summary>
         /// TBD
         /// </summary>
@@ -997,13 +974,9 @@ namespace Akka.IO
                 return _cause;
             }
         }
-    }
 
-    /// <summary>
-    /// TBD
-    /// </summary>
-    public class TcpExt : IOExtension
-    {
+        #endregion
+
         private readonly TcpSettings _settings;
         private readonly IActorRef _manager;
         private readonly IBufferPool _bufferPool;
@@ -1085,7 +1058,7 @@ namespace Akka.IO
         /// TBD
         /// </summary>
         /// <param name="system">TBD</param>
-        public TcpExt(ExtendedActorSystem system)
+        public Tcp(ExtendedActorSystem system)
         {
             _settings = new TcpSettings(system.Settings.Config.GetConfig("akka.io.tcp"));
             _bufferPool = new DirectByteBufferPool(_settings.DirectBufferSize, _settings.MaxDirectBufferPoolSize);
@@ -1136,6 +1109,11 @@ namespace Akka.IO
         internal MessageDispatcher FileIoDispatcher
         {
             get { return _fileIoDispatcher; }
+        }
+
+        public static Tcp Get(ActorSystem system)
+        {
+            return system.WithExtension<Tcp>();
         }
     }
 
@@ -1322,7 +1300,7 @@ namespace Akka.IO
         /// <returns>TBD</returns>
         public static IActorRef Tcp(this ActorSystem system)
         {
-            return IO.Tcp.Manager(system);
+            return IO.Tcp.Get(system).Manager;
         }
     }
 }

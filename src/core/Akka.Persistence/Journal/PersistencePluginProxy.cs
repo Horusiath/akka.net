@@ -51,7 +51,7 @@ namespace Akka.Persistence.Journal
         /// <param name="address">TBD</param>
         public static void SetTargetLocation(ActorSystem system, Address address)
         {
-            var persistence = Persistence.Instance.Apply(system);
+            var persistence = Persistence.Get(system);
             persistence.JournalFor(null).Tell(new TargetLocation(address));
             if (string.IsNullOrEmpty(system.Settings.Config.GetString("akka.persistence.snapshot-store.plugin")))
                 persistence.SnapshotStoreFor(null).Tell(new TargetLocation(address));
@@ -63,7 +63,7 @@ namespace Akka.Persistence.Journal
         /// <param name="system">TBD</param>
         public static void Start(ActorSystem system)
         {
-            var persistence = Persistence.Instance.Apply(system);
+            var persistence = Persistence.Get(system);
             persistence.JournalFor(null);
             if (string.IsNullOrEmpty(system.Settings.Config.GetString("akka.persistence.snapshot-store.plugin")))
                 persistence.SnapshotStoreFor(null);
@@ -134,13 +134,13 @@ namespace Akka.Persistence.Journal
                 {
                     if (_log.IsInfoEnabled)
                         _log.Info("Starting target journal [{0}]", _targetPluginId);
-                    target = Persistence.Instance.Apply(Context.System).JournalFor(_targetPluginId);
+                    target = Persistence.Get(Context.System).JournalFor(_targetPluginId);
                 }
                 else if (_pluginType is SnapshotStore)
                 {
                     if (_log.IsInfoEnabled)
                         _log.Info("Starting target snapshot-store [{0}]", _targetPluginId);
-                    target = Persistence.Instance.Apply(Context.System).SnapshotStoreFor(_targetPluginId);
+                    target = Persistence.Get(Context.System).SnapshotStoreFor(_targetPluginId);
                 }
                 Context.Become(Active(target, true));
             }
@@ -369,7 +369,7 @@ namespace Akka.Persistence.Journal
     /// of the <see cref="PersistencePluginProxy"/> via configuration, without requiring any code changes or the
     /// creation of any actors.
     /// </summary>
-    public class PersistencePluginProxyExtension : ExtensionIdProvider<PersistencePluginProxyExtension>, IExtension
+    public class PersistencePluginProxyExtension : IExtension
     {
         /// <summary>
         /// TBD
@@ -378,16 +378,6 @@ namespace Akka.Persistence.Journal
         public PersistencePluginProxyExtension(ActorSystem system)
         {
             PersistencePluginProxy.Start(system);
-        }
-
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override PersistencePluginProxyExtension CreateExtension(ExtendedActorSystem system)
-        {
-            return new PersistencePluginProxyExtension(system);
         }
     }
 }

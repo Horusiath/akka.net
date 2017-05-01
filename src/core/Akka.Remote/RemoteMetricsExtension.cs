@@ -18,30 +18,18 @@ namespace Akka.Remote
     ///     Extension that keeps track of remote metrics, such
     ///     as max size of different message types.
     /// </summary>
-    internal class RemoteMetricsExtension : ExtensionIdProvider<IRemoteMetrics>
+    internal static class RemoteMetrics
     {
         /// <summary>
         /// TBD
         /// </summary>
         /// <param name="system">TBD</param>
         /// <returns>TBD</returns>
-        public override IRemoteMetrics CreateExtension(ExtendedActorSystem system)
+        public static IRemoteMetrics Create(ActorSystem system)
         {
-            if (system.Settings.Config.GetString("akka.remote.log-frame-size-exceeding").ToLowerInvariant() == "off")
-            {
-                return new RemoteMetricsOff();
-            }
-            return new RemoteMetricsOn(system);
-        }
-
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public static IRemoteMetrics Create(ExtendedActorSystem system)
-        {
-            return system.WithExtension<IRemoteMetrics, RemoteMetricsExtension>();
+            return system.Settings.Config.GetString("akka.remote.log-frame-size-exceeding").ToLowerInvariant() == "off"
+                ? system.WithExtension<IRemoteMetrics, RemoteMetricsOff>()
+                : system.WithExtension<IRemoteMetrics, RemoteMetricsOn>();
         }
     }
 

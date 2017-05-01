@@ -103,7 +103,7 @@ namespace Akka.Persistence.Tests
         [Fact]
         public void Persistence_should_use_inmem_journal_by_default()
         {
-            var persistence = Persistence.Instance.Apply(Sys);
+            var persistence = Persistence.Get(Sys);
             var journal = persistence.JournalFor(string.Empty); // get the default journal
             journal.Path.Name.ShouldBe("akka.persistence.journal.inmem");
         }
@@ -111,7 +111,7 @@ namespace Akka.Persistence.Tests
         [Fact]
         public void Persistence_should_use_local_snapshot_store_by_default()
         {
-            var persistence = Persistence.Instance.Apply(Sys);
+            var persistence = Persistence.Get(Sys);
             var journal = persistence.SnapshotStoreFor(string.Empty); // get the default snapshot store
             journal.Path.Name.ShouldBe("akka.persistence.snapshot-store.local");
         }
@@ -119,7 +119,7 @@ namespace Akka.Persistence.Tests
         [Fact]
         public void Persistence_should_be_able_to_register_the_same_journal_under_different_paths()
         {
-            var persistence = Persistence.Instance.Apply(Sys);
+            var persistence = Persistence.Get(Sys);
             var journal1 = persistence.JournalFor("akka.persistence.journal.test1");
             var journal2 = persistence.JournalFor("akka.persistence.journal.test2");
 
@@ -133,7 +133,7 @@ namespace Akka.Persistence.Tests
         [Fact]
         public void Persistence_should_be_able_to_register_the_same_snapshot_store_under_different_paths()
         {
-            var persistence = Persistence.Instance.Apply(Sys);
+            var persistence = Persistence.Get(Sys);
             var snapshotStore1 = persistence.SnapshotStoreFor("akka.persistence.snapshot-store.test1");
             var snapshotStore2 = persistence.SnapshotStoreFor("akka.persistence.snapshot-store.test2");
 

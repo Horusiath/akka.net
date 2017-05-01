@@ -130,14 +130,7 @@ namespace Akka.Actor
         /// </summary>
         /// <param name="dependencyResolver"></param>
         public abstract void UseDependencyResolver(IDependencyResolver dependencyResolver);
-
-        /// <summary>
-        /// Retrieves the specified extension that is registered to this actor system.
-        /// </summary>
-        /// <param name="extensionId">The extension to retrieve</param>
-        /// <returns>The specified extension registered to this actor system</returns>
-        public abstract object GetExtension(IExtensionId extensionId);
-
+        
         /// <summary>
         /// Retrieves an extension with the specified type that is registered to this actor system.
         /// </summary>
@@ -165,7 +158,7 @@ namespace Akka.Actor
         /// <param name="extensionType">The type of extension to retrieve</param>
         /// <param name="extension">The extension that is retrieved if successful</param>
         /// <returns><c>true</c> if the retrieval was successful; otherwise <c>false</c>.</returns>
-        public abstract bool TryGetExtension(Type extensionType, out object extension);
+        public abstract bool TryGetExtension(Type extensionType, out IExtension extension);
 
         /// <summary>
         /// Tries to retrieve an extension with the specified type
@@ -279,7 +272,7 @@ namespace Akka.Actor
         /// </summary>
         /// <param name="extension">The extension to register with this actor system</param>
         /// <returns>The extension registered with this actor system</returns>
-        public abstract object RegisterExtension(IExtensionId extension);
+        public abstract object RegisterExtension(IExtension extension);
 
         /// <inheritdoc cref="IActorRefFactory"/>
         public abstract IActorRef ActorOf(Props props, string name = null);

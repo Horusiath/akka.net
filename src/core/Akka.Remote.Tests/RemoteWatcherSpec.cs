@@ -173,7 +173,7 @@ namespace Akka.Remote.Tests
         {
             _remoteSystem = ActorSystem.Create("RemoteSystem", Sys.Settings.Config);
             _remoteAddress = _remoteSystem.AsInstanceOf<ExtendedActorSystem>().Provider.DefaultAddress;
-            var remoteAddressUid = AddressUidExtension.Uid(_remoteSystem);
+            var remoteAddressUid = AddressUid.GetUid(_remoteSystem);
 
             //TODO: Mute dead letters?
             /*
@@ -196,7 +196,7 @@ namespace Akka.Remote.Tests
 
         private int RemoteAddressUid
         {
-            get { return AddressUidExtension.Uid(_remoteSystem); }
+            get { return AddressUid.GetUid(_remoteSystem); }
         }
 
         private IInternalActorRef CreateRemoteActor(Props props, string name)

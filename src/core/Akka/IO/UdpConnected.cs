@@ -23,23 +23,9 @@ namespace Akka.IO
     /// For a full description of the design and philosophy behind this IO
     /// implementation please refer to <see href="http://doc.akka.io/">the Akka online documentation</see>.
     /// </summary>
-    public class UdpConnected : ExtensionIdProvider<UdpConnectedExt>
+    public class UdpConnected : IOExtension
     {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        public static readonly UdpConnected Instance = new UdpConnected();
-
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override UdpConnectedExt CreateExtension(ExtendedActorSystem system)
-        {
-            return new UdpConnectedExt(system);
-        }
-
+        #region messages
         /// <summary>
         /// The common interface for <see cref="Command"/> and <see cref="Event"/>.
         /// </summary>
@@ -318,20 +304,15 @@ namespace Akka.IO
             { }
         }
 
-    }
+        #endregion
 
-    /// <summary>
-    /// TBD
-    /// </summary>
-    public class UdpConnectedExt : IOExtension
-    {
         private readonly IActorRef _manager;
 
         /// <summary>
         /// TBD
         /// </summary>
         /// <param name="system">TBD</param>
-        public UdpConnectedExt(ExtendedActorSystem system)
+        public UdpConnected(ExtendedActorSystem system)
         {
             Settings = new Udp.UdpSettings(system.Settings.Config.GetConfig("akka.io.udp-connected"));
             BufferPool = new DirectByteBufferPool(Settings.DirectBufferSize, Settings.MaxDirectBufferPoolSize);
@@ -356,5 +337,10 @@ namespace Akka.IO
         /// TBD
         /// </summary>
         internal Udp.UdpSettings Settings { get; private set; }
+
+        public static UdpConnected Get(ActorSystem sys)
+        {
+            return sys.WithExtension<UdpConnected>();
+        }
     }
 }

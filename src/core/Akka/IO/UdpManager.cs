@@ -54,13 +54,13 @@ namespace Akka.IO
     /// </summary>
     internal class UdpManager : SelectionHandler.SelectorBasedManager
     {
-        private readonly UdpExt _udp;
+        private readonly Udp _udp;
 
         /// <summary>
         /// TBD
         /// </summary>
         /// <param name="udp">TBD</param>
-        public UdpManager(UdpExt udp) 
+        public UdpManager(Udp udp) 
             : base(udp.Setting, udp.Setting.NrOfSelectors)
         {
             _udp = udp;

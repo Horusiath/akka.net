@@ -56,10 +56,10 @@ namespace Akka.Persistence.Tests
             Clean.Initialize();
         }
 
-        public PersistenceExtension Extension { get { return Persistence.Instance.Apply(Sys); } }
+        public Persistence Extension => Persistence.Get(Sys);
 
-        public string NamePrefix { get { return Sys.Name; } }
-        public string Name { get { return _name; } }
+        public string NamePrefix => Sys.Name;
+        public string Name => _name;
 
         protected override void AfterAll()
         {

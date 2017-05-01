@@ -54,13 +54,13 @@ namespace Akka.IO
     /// </summary>
     internal class TcpManager : SelectionHandler.SelectorBasedManager
     {
-        private readonly TcpExt _tcp;
+        private readonly Tcp _tcp;
 
         /// <summary>
         /// TBD
         /// </summary>
         /// <param name="tcp">TBD</param>
-        public TcpManager(TcpExt tcp)
+        public TcpManager(Tcp tcp)
             : base(tcp.Settings, tcp.Settings.NrOfSelectors)
         {
             _tcp = tcp;

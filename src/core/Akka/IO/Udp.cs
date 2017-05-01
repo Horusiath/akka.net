@@ -25,32 +25,9 @@ namespace Akka.IO
     /// For a full description of the design and philosophy behind this IO
     /// implementation please refer to <see href="http://doc.akka.io/">the Akka online documentation</see>.
     /// </summary>
-    public class Udp : ExtensionIdProvider<UdpExt>
+    public class Udp : IOExtension
     {
-        /// <summary>
-        /// TBD
-        /// </summary>
-        public static readonly Udp Instance = new Udp();
-
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public static IActorRef Manager(ActorSystem system)
-        {
-            return Instance.Apply(system).Manager;
-        }
-
-        /// <summary>
-        /// TBD
-        /// </summary>
-        /// <param name="system">TBD</param>
-        /// <returns>TBD</returns>
-        public override UdpExt CreateExtension(ExtendedActorSystem system)
-        {
-            return new UdpExt(system);
-        }
+        #region messages
 
         /// <summary>The common interface for <see cref="Command"/> and <see cref="Event"/>.</summary>
         public abstract class Message { }
@@ -454,13 +431,8 @@ namespace Akka.IO
             /// </summary>
             public string ManagementDispatcher { get; private set; }
         }
-    }
+        #endregion
 
-    /// <summary>
-    /// TBD
-    /// </summary>
-    public class UdpExt : IOExtension
-    {
         private readonly Udp.UdpSettings _settings;
         private readonly IActorRef _manager;
 
@@ -468,7 +440,7 @@ namespace Akka.IO
         /// TBD
         /// </summary>
         /// <param name="system">TBD</param>
-        public UdpExt(ExtendedActorSystem system)
+        public Udp(ExtendedActorSystem system)
         {
             _settings = new Udp.UdpSettings(system.Settings.Config.GetConfig("akka.io.udp"));
             _manager = system.SystemActorOf(
@@ -495,6 +467,11 @@ namespace Akka.IO
         /// TBD
         /// </summary>
         internal DirectByteBufferPool BufferPool { get; private set; }
+
+        public static Udp Get(ActorSystem system)
+        {
+            return system.WithExtension<Udp>();
+        }
     }
 
     /// <summary>
@@ -509,7 +486,7 @@ namespace Akka.IO
         /// <returns>TBD</returns>
         public static IActorRef Udp(this ActorSystem system)
         {
-            return IO.Udp.Manager(system);
+            return IO.Udp.Get(system).Manager;
         }
     }
 

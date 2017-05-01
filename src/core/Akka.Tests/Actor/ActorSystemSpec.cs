@@ -251,17 +251,17 @@ namespace Akka.Tests.Actor
         [Fact]
         public void Support_extensions()
         {
-            Assert.True(Sys.HasExtension<TestExtensionImpl>());
-            var testExtension = Sys.WithExtension<TestExtensionImpl>();
+            Assert.True(Sys.HasExtension<TestExtension>());
+            var testExtension = Sys.WithExtension<TestExtension>();
             Assert.Equal(Sys, testExtension.System);
         }
 
         [Fact]
         public void Support_dynamically_registered_extensions()
         {
-            Assert.False(Sys.HasExtension<OtherTestExtensionImpl>());
-            var otherTestExtension = Sys.WithExtension<OtherTestExtensionImpl>(typeof(OtherTestExtension));
-            Assert.True(Sys.HasExtension<OtherTestExtensionImpl>());
+            Assert.False(Sys.HasExtension<OtherTestExtension>());
+            var otherTestExtension = Sys.WithExtension<OtherTestExtension>();
+            Assert.True(Sys.HasExtension<OtherTestExtension>());
             Assert.Equal(Sys, otherTestExtension.System);
         }
 
@@ -269,7 +269,7 @@ namespace Akka.Tests.Actor
 
         public void Handle_extensions_that_fail_to_initialize()
         {
-            Action loadExtenions = () => Sys.WithExtension<FailingTestExtensionImpl>(typeof(FailingTestExtension));
+            Action loadExtenions = () => Sys.WithExtension<FailingTestExtension>();
 
             Assert.Throws<FailingTestExtension.TestException>(loadExtenions);
             // same exception should be reported next time
@@ -335,65 +335,41 @@ namespace Akka.Tests.Actor
             Assert.True(system.WhenTerminated.Wait(1000));
         }
     }
-
-    public class OtherTestExtension : ExtensionIdProvider<OtherTestExtensionImpl>
+    
+    public class OtherTestExtension : IExtension
     {
-        public override OtherTestExtensionImpl CreateExtension(ExtendedActorSystem system)
-        {
-            return new OtherTestExtensionImpl(system);
-        }
-    }
-
-    public class OtherTestExtensionImpl : IExtension
-    {
-        public OtherTestExtensionImpl(ActorSystem system)
+        public OtherTestExtension(ActorSystem system)
         {
             System = system;
         }
 
         public ActorSystem System { get; private set; }
     }
-
-    public class TestExtension : ExtensionIdProvider<TestExtensionImpl>
+    
+    public class TestExtension : IExtension
     {
-        public override TestExtensionImpl CreateExtension(ExtendedActorSystem system)
-        {
-            return new TestExtensionImpl(system);
-        }
-    }
-
-    public class TestExtensionImpl : IExtension
-    {
-        public TestExtensionImpl(ActorSystem system)
+        public TestExtension(ActorSystem system)
         {
             System = system;
         }
 
         public ActorSystem System { get; private set; }
     }
-
-    public class FailingTestExtension : ExtensionIdProvider<FailingTestExtensionImpl>
+    
+    public class FailingTestExtension : IExtension
     {
-        public override FailingTestExtensionImpl CreateExtension(ExtendedActorSystem system)
-        {
-            return new FailingTestExtensionImpl(system);
-        }
-
         public class TestException : Exception
         {
         }
-    }
 
-    public class FailingTestExtensionImpl : IExtension
-    {
-        public FailingTestExtensionImpl(ActorSystem system)
+        public FailingTestExtension(ActorSystem system)
         {
             // first time the actor is created
             var uniqueActor = system.ActorOf(Props.Empty, "uniqueActor");
             // but the extension initialization fails
             // second time it will throw exception when trying to create actor with same name,
             // but we want to see the first exception every time
-            throw new FailingTestExtension.TestException();
+            throw new TestException();
         }
     }
 

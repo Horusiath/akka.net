@@ -131,7 +131,7 @@ namespace Akka.Persistence
         /// <summary>
         /// TBD
         /// </summary>
-        protected readonly PersistenceExtension Extension;
+        protected readonly Persistence Extension;
         private readonly ILoggingAdapter _log;
         private IStash _stash;
 
@@ -144,7 +144,7 @@ namespace Akka.Persistence
             _isWriteInProgress = false;
             _sequenceNr = 0L;
 
-            Extension = Persistence.Instance.Apply(Context.System);
+            Extension = Persistence.Get(Context.System);
             _instanceId = InstanceCounter.GetAndIncrement();
             _writerGuid = Guid.NewGuid().ToString();
             _currentState = null;

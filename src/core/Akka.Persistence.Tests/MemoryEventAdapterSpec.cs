@@ -306,13 +306,13 @@ namespace Akka.Persistence.Tests
         private object ToJournal(object message, string journalName = null)
         {
             journalName = string.IsNullOrEmpty(journalName) ? _journalName : journalName;
-            return Persistence.Instance.Apply(Sys).AdaptersFor("akka.persistence.journal." + journalName).Get(message.GetType()).ToJournal(message);
+            return Persistence.Get(Sys).AdaptersFor("akka.persistence.journal." + journalName).Get(message.GetType()).ToJournal(message);
         }
 
         private object FromJournal(object message, string journalName = null)
         {
             journalName = string.IsNullOrEmpty(journalName) ? _journalName : journalName;
-            return Persistence.Instance.Apply(Sys).AdaptersFor("akka.persistence.journal." + journalName).Get(message.GetType()).FromJournal(message, string.Empty);
+            return Persistence.Get(Sys).AdaptersFor("akka.persistence.journal." + journalName).Get(message.GetType()).FromJournal(message, string.Empty);
         }
 
         [Fact]

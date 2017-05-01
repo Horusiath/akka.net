@@ -123,7 +123,7 @@ namespace Akka.Streams.Actors
     /// </summary>
     public abstract class ActorSubscriber : ActorBase
     {
-        private readonly ActorSubscriberState _state = ActorSubscriberState.Instance.Apply(Context.System);
+        private readonly ActorSubscriberState _state = ActorSubscriberState.Get(Context.System);
         private ISubscription _subscription;
         private long _requested;
         private bool _canceled;
@@ -380,7 +380,7 @@ namespace Akka.Streams.Actors
     /// <summary>
     /// TBD
     /// </summary>
-    public sealed class ActorSubscriberState : ExtensionIdProvider<ActorSubscriberState>, IExtension
+    public sealed class ActorSubscriberState : IExtension
     {
         /// <summary>
         /// TBD
@@ -459,6 +459,6 @@ namespace Akka.Streams.Actors
         /// </summary>
         /// <param name="system">TBD</param>
         /// <returns>TBD</returns>
-        public override ActorSubscriberState CreateExtension(ExtendedActorSystem system) => new ActorSubscriberState();
+        public static ActorSubscriberState Get(ActorSystem system) => system.WithExtension<ActorSubscriberState>();
     }
 }

@@ -22,7 +22,7 @@ namespace Akka.Persistence.Query
 
         public static PersistenceQuery Get(ActorSystem system)
         {
-            return system.WithExtension<PersistenceQuery, PersistenceQueryProvider>();
+            return system.WithExtension<PersistenceQuery>();
         }
 
         public ILoggingAdapter Log => _log ?? (_log = _system.Log);
@@ -73,15 +73,7 @@ namespace Akka.Persistence.Query
             return defaultConfigMethod?.Invoke(null, null) as Config;
         }
     }
-
-    public class PersistenceQueryProvider : ExtensionIdProvider<PersistenceQuery>
-    {
-        public override PersistenceQuery CreateExtension(ExtendedActorSystem system)
-        {
-            return new PersistenceQuery(system);
-        }
-    }
-
+    
     public static class PersistenceQueryExtensions
     {
         public static TJournal ReadJournalFor<TJournal>(this ActorSystem system, string readJournalPluginId)

@@ -36,7 +36,7 @@ namespace Akka.Tests.IO
         private IActorRef BindUdp(IPEndPoint address, IActorRef handler)
         {
             var commander = CreateTestProbe();
-            commander.Send(Udp.Instance.Apply(Sys).Manager, new Udp.Bind(handler, address));
+            commander.Send(Udp.Get(Sys).Manager, new Udp.Bind(handler, address));
             commander.ExpectMsg<Udp.Bound>(x => x.LocalAddress.Equals(address)); 
             return commander.Sender;
         }
@@ -44,7 +44,7 @@ namespace Akka.Tests.IO
         private IActorRef ConnectUdp(IPEndPoint localAddress, IPEndPoint remoteAddress, IActorRef handler)
         {
             var commander = CreateTestProbe();
-            commander.Send(UdpConnected.Instance.Apply(Sys).Manager, new UdpConnected.Connect(handler, remoteAddress, localAddress));
+            commander.Send(UdpConnected.Get(Sys).Manager, new UdpConnected.Connect(handler, remoteAddress, localAddress));
             commander.ExpectMsg<UdpConnected.Connected>();
             return commander.Sender;
         }

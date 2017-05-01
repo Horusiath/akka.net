@@ -12,22 +12,6 @@ using Akka.Util;
 namespace Akka.Event
 {
     /// <summary>
-    /// This class represents an <see cref="ActorSystem"/> provider used to create the <see cref="AddressTerminatedTopic"/> extension.
-    /// </summary>
-    internal sealed class AddressTerminatedTopicProvider : ExtensionIdProvider<AddressTerminatedTopic>
-    {
-        /// <summary>
-        /// Creates the <see cref="AddressTerminatedTopic"/> extension using a given actor system.
-        /// </summary>
-        /// <param name="system">The actor system to use when creating the extension.</param>
-        /// <returns>The extension created using the given actor system.</returns>
-        public override AddressTerminatedTopic CreateExtension(ExtendedActorSystem system)
-        {
-            return new AddressTerminatedTopic();
-        }
-    }
-
-    /// <summary>
     /// This class represents an <see cref="ActorSystem"/> extension used by remote and cluster death watchers
     /// to publish <see cref="AddressTerminated"/> notifications when a remote system is deemed dead.
     /// 
@@ -44,7 +28,7 @@ namespace Akka.Event
         /// <returns>The extension retrieved from the given actor system.</returns>
         public static AddressTerminatedTopic Get(ActorSystem system)
         {
-            return system.WithExtension<AddressTerminatedTopic>(typeof(AddressTerminatedTopicProvider));
+            return system.WithExtension<AddressTerminatedTopic>();
         }
 
         /// <summary>

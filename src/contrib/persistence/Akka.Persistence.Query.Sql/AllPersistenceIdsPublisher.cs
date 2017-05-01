@@ -27,7 +27,7 @@ namespace Akka.Persistence.Query.Sql
         {
             _liveQuery = liveQuery;
             _buffer = new DeliveryBuffer<string>(OnNext);
-            _journalRef = Persistence.Instance.Apply(Context.System).JournalFor(writeJournalPluginId);
+            _journalRef = Persistence.Get(Context.System).JournalFor(writeJournalPluginId);
         }
 
         protected override bool Receive(object message) => message.Match()
