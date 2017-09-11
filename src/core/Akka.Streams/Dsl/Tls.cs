@@ -103,7 +103,6 @@ namespace Akka.Streams.Dsl
     /// ignoring both types of events the stage will shut down once both events have
     /// been received.
     /// </remarks>
-    /// <seealso cref="TlsClosing"/>
     public static class Tls
     {
         /// <summary>

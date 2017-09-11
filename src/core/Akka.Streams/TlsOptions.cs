@@ -32,6 +32,57 @@ namespace Akka.Streams
     }
 
     /// <summary>
+    /// All streams in Akka are unidirectional: while in a complex flow graph data
+    /// may flow in multiple directions these individual flows are independent from
+    /// each other. The difference between two half-duplex connections in opposite
+    /// directions and a full-duplex connection is that the underlying transport
+    /// is shared in the latter and tearing it down will end the data transfer in
+    /// both directions.
+    /// 
+    /// When integrating a full-duplex transport medium that does not support
+    /// half-closing (which means ending one direction of data transfer without
+    /// ending the other) into a stream topology, there can be unexpected effects.
+    /// Feeding a finite Source into this medium will close the connection after
+    /// all elements have been sent, which means that possible replies may not
+    /// be received in full. To support this type of usage, the sending and
+    /// receiving of data on the same side (e.g. on the client) need to be
+    /// coordinated such that it is known when all replies have been received.
+    /// Only then should the transport be shut down.
+    /// 
+    /// To support these scenarios it is recommended that the full-duplex
+    /// transport integration is configurable in terms of termination handling,
+    /// which means that the user can optionally suppress the normal (closing)
+    /// reaction to completion or cancellation events, as is expressed by the
+    /// possible values of this type.
+    /// </summary>
+    [Flags]
+    public enum TlsClosing
+    {
+        /// <summary>
+        /// Means to not ignore signals.
+        /// </summary>
+        EagerClose = 0,
+
+        /// <summary>
+        /// Means to not react to cancellation of the receiving side unless the 
+        /// sending side has already completed.
+        /// </summary>
+        IgnoreCancel   = 1,
+
+        /// <summary>
+        /// Means to not react to the completion of the sending side unless 
+        /// the receiving side has already canceled.
+        /// </summary>
+        IgnoreComplete = 2,
+
+        /// <summary>
+        /// Means to ignore the first termination signal—be that cancellation 
+        /// or completion—and only act upon the second one.
+        /// </summary>
+        IgnoreBoth     = IgnoreCancel&IgnoreComplete,
+    }
+
+    /// <summary>
     /// This is the supertype of all messages that the SslTls stage emits on the
     /// plaintext side.
     /// </summary>
