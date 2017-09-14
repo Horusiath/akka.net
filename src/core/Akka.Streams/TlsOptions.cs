@@ -158,6 +158,7 @@ namespace Akka.Streams
      */
     public sealed class NegotiateNewSession : ITlsOutbound
     {
-        
+        public static readonly NegotiateNewSession Instance = new NegotiateNewSession();
+        private NegotiateNewSession() { }
     }
 }

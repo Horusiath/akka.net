@@ -95,6 +95,7 @@ namespace Akka.Streams.Tests.IO
         public abstract class CommunicationSetup : Named
         {
             public abstract Flow<ITlsOutbound, ITlsInbound, NotUsed> DecorateFlow(
+                TlsSpec spec,
                 TlsClosing leftClosing,
                 TlsClosing rightClosing,
                 Flow<ITlsInbound, ITlsOutbound, NotUsed> rhs);
@@ -103,38 +104,66 @@ namespace Akka.Streams.Tests.IO
 
         public sealed class ClientInitiates : CommunicationSetup
         {
-            public override Flow<ITlsOutbound, ITlsInbound, NotUsed> DecorateFlow(TlsClosing leftClosing, TlsClosing rightClosing, Flow<ITlsInbound, ITlsOutbound, NotUsed> rhs)
-            {
-                throw new NotImplementedException();
-            }
+            public override Flow<ITlsOutbound, ITlsInbound, NotUsed> DecorateFlow(TlsSpec spec, TlsClosing leftClosing, TlsClosing rightClosing, Flow<ITlsInbound, ITlsOutbound, NotUsed> rhs) =>
+                ClientTls(leftClosing).Atop(ServerTls(rightClosing).Reversed()).Join(rhs);
         }
 
         public sealed class ServerInitiates : CommunicationSetup
         {
-            public override Flow<ITlsOutbound, ITlsInbound, NotUsed> DecorateFlow(TlsClosing leftClosing, TlsClosing rightClosing, Flow<ITlsInbound, ITlsOutbound, NotUsed> rhs)
-            {
-                throw new NotImplementedException();
-            }
+            public override Flow<ITlsOutbound, ITlsInbound, NotUsed> DecorateFlow(TlsSpec spec, TlsClosing leftClosing, TlsClosing rightClosing, Flow<ITlsInbound, ITlsOutbound, NotUsed> rhs) =>
+                ServerTls(leftClosing).Atop(ClientTls(rightClosing).Reversed()).Join(rhs);
         }
 
         public sealed class ClientInitiatesViaTcp : CommunicationSetup
         {
-            public override Flow<ITlsOutbound, ITlsInbound, NotUsed> DecorateFlow(TlsClosing leftClosing, TlsClosing rightClosing, Flow<ITlsInbound, ITlsOutbound, NotUsed> rhs)
+            private Tcp.ServerBinding _binding;
+
+            public override Flow<ITlsOutbound, ITlsInbound, NotUsed> DecorateFlow(TlsSpec spec, TlsClosing leftClosing,
+                TlsClosing rightClosing, Flow<ITlsInbound, ITlsOutbound, NotUsed> rhs)
             {
-                throw new NotImplementedException();
+                _binding = spec.Server(ServerTls(rightClosing).Reversed().Join(rhs));
+                return ClientTls(leftClosing).Join(spec.Sys.TcpStream().OutgoingConnection(_binding.LocalAddress));
+            }
+
+            public override void Cleanup()
+            {
+                _binding.Unbind().Wait(TimeSpan.FromSeconds(2));
             }
         }
 
         public sealed class ServerInitiatesViaTcp : CommunicationSetup
         {
-            public override Flow<ITlsOutbound, ITlsInbound, NotUsed> DecorateFlow(TlsClosing leftClosing, TlsClosing rightClosing, Flow<ITlsInbound, ITlsOutbound, NotUsed> rhs)
+            private Tcp.ServerBinding _binding;
+
+            public override Flow<ITlsOutbound, ITlsInbound, NotUsed> DecorateFlow(TlsSpec spec, TlsClosing leftClosing,
+                TlsClosing rightClosing, Flow<ITlsInbound, ITlsOutbound, NotUsed> rhs)
             {
-                throw new NotImplementedException();
+                _binding = spec.Server(ClientTls(rightClosing).Reversed().Join(rhs));
+                return ServerTls(leftClosing).Join(spec.Sys.TcpStream().OutgoingConnection(_binding.LocalAddress));
+            }
+
+            public override void Cleanup()
+            {
+                _binding.Unbind().Wait(TimeSpan.FromSeconds(2));
             }
         }
 
         public abstract class PayloadScenario : Named
         {
+            protected PayloadScenario()
+            {
+                Flow = Akka.Streams.Dsl.Flow.Create<ITlsInbound>()
+                    .Select(x =>
+                    {
+                        switch (x)
+                        {
+                            case SessionTruncated _: return (ITlsOutbound)new SendBytes(ByteString.FromString("TRUNCATED"));
+                            case SessionBytes sb: return new SendBytes(sb.Payload);
+                            default: throw new NotSupportedException("Should never happen");
+                        }
+                    });
+            }
+
             public virtual Flow<ITlsInbound, ITlsOutbound, NotUsed> Flow { get; }
             public virtual TlsClosing LeftClosing => TlsClosing.IgnoreComplete;
             public virtual TlsClosing RightClosing => TlsClosing.IgnoreComplete;
@@ -148,85 +177,153 @@ namespace Akka.Streams.Tests.IO
 
         public sealed class SingleBytes : PayloadScenario
         {
-            public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
+            public const string Str = "0123456789";
+            public override IEnumerable<ITlsOutbound> Inputs { get; } = Str.Select(ch => new SendBytes(ByteString.FromBytes(BitConverter.GetBytes(ch))));
+            public override ByteString Output { get; } = ByteString.FromString(Str);
         }
 
         public sealed class MediumMessages : PayloadScenario
         {
-            public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
+            public static readonly string[] Strs = "0123456789".Select(d => new string(Enumerable.Repeat(d, ThreadLocalRandom.Current.Next(9000) + 1000).ToArray())).ToArray();
+            public override IEnumerable<ITlsOutbound> Inputs { get; } = Strs.Select(s => new SendBytes(ByteString.FromString(s)));
+            public override ByteString Output { get; } = ByteString.FromString(string.Join("", Strs));
         }
 
         public sealed class LargeMessages : PayloadScenario
         {
-            public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
+            // TLS max packet size is 16384 bytes
+            public static readonly string[] Strs = "0123456789".Select(d => new string(Enumerable.Repeat(d, ThreadLocalRandom.Current.Next(9000) + 17000).ToArray())).ToArray();
+            public override IEnumerable<ITlsOutbound> Inputs { get; } = Strs.Select(s => new SendBytes(ByteString.FromString(s)));
+            public override ByteString Output { get; } = ByteString.FromString(string.Join("", Strs));
         }
 
         public sealed class EmptyBytesFirst : PayloadScenario
         {
-            public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
+            public override IEnumerable<ITlsOutbound> Inputs { get; } = new[] { ByteString.Empty, ByteString.FromString("hello") }.Select(x => new SendBytes(x));
+            public override ByteString Output { get; } = ByteString.FromString("hello");
         }
 
         public sealed class EmptyBytesInTheMiddle : PayloadScenario
         {
-            public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
+            public override IEnumerable<ITlsOutbound> Inputs { get; } = new[] { ByteString.FromString("hello"), ByteString.Empty, ByteString.FromString(" world") }.Select(x => new SendBytes(x));
+            public override ByteString Output { get; } = ByteString.FromString("hello world");
         }
 
         public sealed class EmptyBytesLast : PayloadScenario
         {
-            public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
+            public override IEnumerable<ITlsOutbound> Inputs { get; } = new[] { ByteString.FromString("hello"), ByteString.Empty }.Select(x => new SendBytes(x));
+            public override ByteString Output { get; } = ByteString.FromString("hello");
         }
 
         public sealed class CancellingRHS : PayloadScenario
         {
+            private static readonly string Str = string.Join("", Enumerable.Repeat("abcdef", 100));
+            public CancellingRHS()
+            {
+                Inputs = Str.Select(this.Send);
+                var superFlow = base.Flow;
+                Flow = Akka.Streams.Dsl.Flow.Create<ITlsInbound>()
+                    .SelectMany(x =>
+                    {
+                        switch (x)
+                        {
+                            case SessionTruncated _: return new[] { x } as IEnumerable<ITlsInbound>;
+                            case SessionBytes sb:
+                                return sb.Payload.Select(b => new SessionBytes(ByteString.FromBytes(new[] { b })));
+                            default: throw new NotSupportedException("Should never happen");
+                        }
+                    })
+                    .Take(5)
+                    .SelectAsync(5, async x =>
+                    {
+                        await Task.Delay(500);
+                        return x;
+                    })
+                    .Via(superFlow);
+            }
+
+            public override Flow<ITlsInbound, ITlsOutbound, NotUsed> Flow { get; }
             public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
+            public override ByteString Output { get; } = ByteString.FromString(new string(Str.Take(5).ToArray()));
+            public override TlsClosing RightClosing => TlsClosing.IgnoreCancel;
         }
 
         public sealed class CancellingRHSIgnoresBoth : PayloadScenario
         {
+            private static readonly string Str = string.Join("", Enumerable.Repeat("abcdef", 100));
+            public CancellingRHSIgnoresBoth()
+            {
+                Inputs = Str.Select(this.Send);
+                var superFlow = base.Flow;
+                Flow = Akka.Streams.Dsl.Flow.Create<ITlsInbound>()
+                    .SelectMany(x =>
+                    {
+                        switch (x)
+                        {
+                            case SessionTruncated _: return new[] { x } as IEnumerable<ITlsInbound>;
+                            case SessionBytes sb:
+                                return sb.Payload.Select(b => new SessionBytes(ByteString.FromBytes(new[] { b })));
+                            default: throw new NotSupportedException("Should never happen");
+                        }
+                    })
+                    .Take(5)
+                    .SelectAsync(5, async x =>
+                    {
+                        await Task.Delay(500);
+                        return x;
+                    })
+                    .Via(superFlow);
+            }
+
+            public override Flow<ITlsInbound, ITlsOutbound, NotUsed> Flow { get; }
             public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
+            public override ByteString Output { get; } = ByteString.FromString(new string(Str.Take(5).ToArray()));
+            public override TlsClosing RightClosing => TlsClosing.IgnoreBoth;
         }
 
         public sealed class LHSIgnoresBoth : PayloadScenario
         {
-            public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
+            private const string Str = "0123456789";
+            public override IEnumerable<ITlsOutbound> Inputs { get; } = Str.Select(x => new SendBytes(ByteString.FromBytes(BitConverter.GetBytes(x))));
+            public override ByteString Output { get; } = ByteString.FromString(Str);
+            public override TlsClosing LeftClosing => TlsClosing.IgnoreBoth;
         }
 
         public sealed class BothSidesIgnoreBoth : PayloadScenario
         {
-            public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
+            private const string Str = "0123456789";
+            public override IEnumerable<ITlsOutbound> Inputs { get; } = Str.Select(x => new SendBytes(ByteString.FromBytes(BitConverter.GetBytes(x))));
+            public override ByteString Output { get; } = ByteString.FromString(Str);
+            public override TlsClosing LeftClosing => TlsClosing.IgnoreBoth;
+            public override TlsClosing RightClosing => TlsClosing.IgnoreBoth;
         }
 
         public sealed class SessionRenegotiationBySender : PayloadScenario
         {
+            public SessionRenegotiationBySender()
+            {
+                Inputs = new ITlsOutbound[] { Send("hello"), NegotiateNewSession.Instance, Send("world") };
+                Output = ByteString.FromString("helloNEWSESSIONworld");
+            }
+
             public override IEnumerable<ITlsOutbound> Inputs { get; }
             public override ByteString Output { get; }
         }
 
+        // difference is that the RHS engine will now receive the handshake while trying to send
         public sealed class SessionRenegotiationByReceiver : PayloadScenario
         {
-            public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
-        }
+            private static readonly string Str = string.Join("", Enumerable.Repeat("0123456789", 100));
 
-        public sealed class SessionRenegotiationFirstOne : PayloadScenario
-        {
-            public override IEnumerable<ITlsOutbound> Inputs { get; }
-            public override ByteString Output { get; }
-        }
+            public SessionRenegotiationByReceiver()
+            {
+                Inputs = Str.Select(Send)
+                    .Union(new ITlsOutbound[]{NegotiateNewSession.Instance})
+                    .Union("hello world".Select(Send));
+                Output = ByteString.FromString(Str + "NEWSESSIONhello world");
+            }
 
-        public sealed class SessionRenegotiationFirstTwo : PayloadScenario
-        {
-            public override IEnumerable<ITlsOutbound> Inputs { get; }
+            public override IEnumerable<ITlsOutbound> Inputs { get; } 
             public override ByteString Output { get; }
         }
 
@@ -251,8 +348,6 @@ namespace Akka.Streams.Tests.IO
                 new CancellingRHS(),
                 new SessionRenegotiationBySender(),
                 new SessionRenegotiationByReceiver(),
-                new SessionRenegotiationFirstOne(),
-                new SessionRenegotiationFirstTwo(),
             };
 
             public IEnumerator<object[]> GetEnumerator()
@@ -278,15 +373,25 @@ namespace Akka.Streams.Tests.IO
             _materializer = Sys.Materializer();
         }
 
+        private Tcp.ServerBinding Server(Flow<ByteString, ByteString, NotUsed> flow)
+        {
+            var serverTask = Sys.TcpStream().Bind("localhost", 0)
+                .To(Sink.ForEach<Tcp.IncomingConnection>(c => c.Flow.Join(flow).Run(_materializer)))
+                .Run(_materializer);
+
+            serverTask.Wait(TimeSpan.FromSeconds(2));
+            return serverTask.Result;
+        }
+
         private static readonly X509Certificate2 Certificate = new X509Certificate2();
-        private BidiFlow<ITlsOutbound, ByteString, ByteString, ITlsInbound, NotUsed> ClientTls(TlsClosing closing) =>
-            Tls.Client(TlsSettings.Client("localhost"));
+        private static BidiFlow<ITlsOutbound, ByteString, ByteString, ITlsInbound, NotUsed> ClientTls(TlsClosing closing) =>
+            Tls.Client(TlsSettings.Client("localhost", closing));
 
-        private BidiFlow<ITlsOutbound, ByteString, ByteString, ITlsInbound, NotUsed> BadClientTls(TlsClosing closing) =>
-            Tls.Client(TlsSettings.Client("localhost", certificates: new X509Certificate2("/badpath")));
+        private static BidiFlow<ITlsOutbound, ByteString, ByteString, ITlsInbound, NotUsed> BadClientTls(TlsClosing closing) =>
+            Tls.Client(TlsSettings.Client("localhost", closing, certificates: new X509Certificate2("/badpath")));
 
-        private BidiFlow<ITlsOutbound, ByteString, ByteString, ITlsInbound, NotUsed> ServerTls(TlsClosing closing) =>
-            Tls.Server(TlsSettings.Server(Certificate));
+        private static BidiFlow<ITlsOutbound, ByteString, ByteString, ITlsInbound, NotUsed> ServerTls(TlsClosing closing) =>
+            Tls.Server(TlsSettings.Server(Certificate, closing));
 
         [Theory]
         [ClassData(typeof(TestCaseGenerator))]
@@ -295,7 +400,7 @@ namespace Akka.Streams.Tests.IO
             this.AssertAllStagesStopped(() =>
             {
                 var f = Source.From(scenario.Inputs)
-                    .Via(setup.DecorateFlow(scenario.LeftClosing, scenario.RightClosing, scenario.Flow))
+                    .Via(setup.DecorateFlow(this, scenario.LeftClosing, scenario.RightClosing, scenario.Flow))
                     .Collect(x => x as SessionBytes)
                     .Scan(ByteString.Empty, (acc, bytes) => acc + bytes.Payload)
                     .Via(new Timeout(TimeSpan.FromSeconds(6), Sys))

@@ -17,21 +17,25 @@ namespace Akka.Streams.Dsl
     public abstract class TlsSettings
     {
         public static TlsClientSettings Client(string targetHost,
+            TlsClosing closing = TlsClosing.EagerClose,
             SslProtocols enabledProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
             bool checkCertificateRevocation = false,
-            params X509Certificate2[] certificates) => new TlsClientSettings(targetHost, enabledProtocols, checkCertificateRevocation, certificates);
+            params X509Certificate2[] certificates) => new TlsClientSettings(targetHost, closing, enabledProtocols, checkCertificateRevocation, certificates);
 
         public static TlsServerSettings Server(X509Certificate2 certificate,
+            TlsClosing closing = TlsClosing.EagerClose,
             bool negotiateClientCertificate = false,
             SslProtocols enabledProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
-            bool checkCertificateRevocation = false) => new TlsServerSettings(certificate, negotiateClientCertificate, enabledProtocols, checkCertificateRevocation);
+            bool checkCertificateRevocation = false) => new TlsServerSettings(certificate, closing, negotiateClientCertificate, enabledProtocols, checkCertificateRevocation);
 
         public SslProtocols EnabledProtocols { get; }
+        public TlsClosing Closing { get; }
         public bool CheckCertificateRevocation { get; }
 
-        protected TlsSettings(SslProtocols enabledProtocols, bool checkCertificateRevocation)
+        protected TlsSettings(SslProtocols enabledProtocols, TlsClosing closing, bool checkCertificateRevocation)
         {
             EnabledProtocols = enabledProtocols;
+            Closing = closing;
             CheckCertificateRevocation = checkCertificateRevocation;
         }
     }
@@ -42,10 +46,11 @@ namespace Akka.Streams.Dsl
         public bool NegotiateClientCertificate { get; }
 
         public TlsServerSettings(X509Certificate2 certificate, 
+            TlsClosing closing = TlsClosing.EagerClose, 
             bool negotiateClientCertificate = false, 
             SslProtocols enabledProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, 
             bool checkCertificateRevocation = false)
-            : base(enabledProtocols, checkCertificateRevocation)
+            : base(enabledProtocols, closing, checkCertificateRevocation)
         {
             Certificate = certificate;
             NegotiateClientCertificate = negotiateClientCertificate;
@@ -57,11 +62,12 @@ namespace Akka.Streams.Dsl
         public string TargetHost { get; }
         public ImmutableArray<X509Certificate2> Certificates { get; }
 
-        public TlsClientSettings(string targetHost, 
+        public TlsClientSettings(string targetHost,
+            TlsClosing closing = TlsClosing.EagerClose,
             SslProtocols enabledProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, 
             bool checkCertificateRevocation = false, 
             params X509Certificate2[] certificates)
-            : base(enabledProtocols, checkCertificateRevocation)
+            : base(enabledProtocols, closing, checkCertificateRevocation)
         {
             TargetHost = targetHost;
             Certificates = certificates?.ToImmutableArray() ?? ImmutableArray<X509Certificate2>.Empty;
