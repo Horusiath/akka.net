@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------
 
 using System;
+using System.IO;
 using System.Net.Security;
 using Akka.Actor;
 using Akka.Event;
@@ -18,26 +19,69 @@ namespace Akka.Streams.Implementation.IO
     {
         #region internal classes
 
-        
+        private sealed class AdapterStream : Stream
+        {
+            private readonly TlsActor _owner;
+
+            public AdapterStream(TlsActor owner)
+            {
+                _owner = owner;
+            }
+
+            public override void Flush()
+            {
+                throw new NotImplementedException();
+            }
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+            public override void SetLength(long value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => true;
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position
+            {
+                get => throw new NotSupportedException();
+                set => throw new NotSupportedException();
+            }
+        }
 
         #endregion
 
         public static Actor.Props Props(TlsSettings settings, 
-            Func<ActorSystem, SslStream> sslStreamFactory,
+            Func<Stream, SslStream> sslStreamFactory,
             bool tracing = false) =>
             Actor.Props.Create(() => new TlsActor(settings, sslStreamFactory, tracing)).WithDeploy(Deploy.Local);
 
         private readonly TlsSettings _settings;
         private SslStream _sslStream;
+        private AdapterStream _adapterStream;
         private readonly bool _tracing;
         private TlsRole _role;
         private ILoggingAdapter _log;
 
-        private TlsActor(TlsSettings settings, Func<ActorSystem, SslStream> sslStreamFactory, bool tracing)
+        private TlsActor(TlsSettings settings, Func<Stream, SslStream> sslStreamFactory, bool tracing)
         {
             _settings = settings;
             _tracing = tracing;
-            _sslStream = sslStreamFactory(Context.System);
+            _adapterStream = new AdapterStream(this);
+            _sslStream = sslStreamFactory(_adapterStream);
             _role = settings is TlsServerSettings ? TlsRole.Server : TlsRole.Client;
         }
 
