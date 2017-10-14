@@ -170,7 +170,7 @@ namespace Akka.Streams.Implementation.IO
         private readonly OutputBunch<ByteString> _outputBunch;
         private readonly InputBunch _inputBunch;
 
-        private readonly ActorMaterializerSettings _settings;
+        private readonly ActorMaterializerSettings _materializerSettings;
         private SslStream _sslStream;
         private AdapterStream _adapterStream;
         private readonly bool _tracing;
@@ -193,31 +193,50 @@ namespace Akka.Streams.Implementation.IO
         private readonly ChoppingBlock _userInChoppingBlock;
         private readonly ChoppingBlock _transportInChoppingBlock;
 
-        private TlsActor(ActorMaterializerSettings settings, Func<Stream, SslStream> sslStreamFactory, bool tracing)
+        private readonly TransferState _needsWrap;
+        private readonly TransferState _inboundOpen;
+        private readonly TransferState _userHasData;
+        private readonly TransferState _userOutCancelled;
+
+        // bidirectional case
+        private readonly TransferState _inbound;
+        private readonly TransferState _outbound;
+
+        // half-closed
+        private readonly TransferState _outboundHalfClosed;
+        private readonly TransferState _inboundHalfClosed;
+
+        private TlsActor(ActorMaterializerSettings materializerSettings, Func<Stream, SslStream> sslStreamFactory, bool tracing)
         {
-            _settings = settings;
+            _materializerSettings = materializerSettings;
             _tracing = tracing;
             _adapterStream = new AdapterStream(this);
             _sslStream = sslStreamFactory(_adapterStream);
             //_role = settings is TlsServerSettings ? TlsRole.Server : TlsRole.Client;
 
             _outputBunch = new OutputBunch<ByteString>(2, Self, this);
-            _inputBunch = new TlsInputBunch(2, settings.MaxInputBufferSize, this);
+            _inputBunch = new TlsInputBunch(2, materializerSettings.MaxInputBufferSize, this);
 
             _userInChoppingBlock = new ChoppingBlock(this, UserIn, "UserIn");
             _transportInChoppingBlock = new ChoppingBlock(this, TransportIn, "TransportIn");
 
+            _inbound = _userHasData.Or(_needsWrap).And(_outputBunch.DemandAvailableFor(TransportOut));
+            _outbound = _transportInChoppingBlock.And(_outputBunch.DemandAvailableFor(UserOut)).Or(_userOutCancelled);
+
+            _outboundHalfClosed = _needsWrap.And(_outputBunch.DemandAvailableFor(TransportOut));
+            _inboundHalfClosed = _transportInChoppingBlock.And(_inboundOpen);
+
             _sslStream.AuthenticateAsServerAsync();
+
+            this.Init();
         }
 
         public bool IsServer => _role == TlsRole.Server;
         public bool IsClient => _role == TlsRole.Client;
         public ILoggingAdapter Log => _log ?? (_log = Context.GetLogger());
 
-        protected override bool Receive(object message)
-        {
-            throw new NotImplementedException();
-        }
+        protected override bool Receive(object message) => 
+            _inputBunch.SubReceive.CurrentReceive(message) || _outputBunch.SubReceive.CurrentReceive(message);
 
         protected override void PostStop()
         {
@@ -225,11 +244,11 @@ namespace Akka.Streams.Implementation.IO
             base.PostStop();
         }
 
-        private bool Authenticating(object message) => throw new NotImplementedException();
-        private bool Authenticated(object message) => throw new NotImplementedException();
-        private bool AuthFailed(object message) => throw new NotImplementedException();
-        private bool ReadBeforeAuth(object message) => throw new NotImplementedException();
-        private bool FlushBeforeHandshake(object message) => throw new NotImplementedException();
+        private void SetNewSession(NegotiateNewSession negotiate)
+        {
+            if (_tracing) Log.Debug("Applying {0}", negotiate);
+            throw new NotImplementedException();
+        }
 
         private ByteString Decode(ByteString data)
         {
@@ -241,49 +260,37 @@ namespace Akka.Streams.Implementation.IO
             throw new NotImplementedException();
         }
 
-        private void Fail(Exception cause)
+        private void Fail(Exception cause, bool closeTransport = true)
         {
-            throw new NotImplementedException();
+            if (_tracing) Log.Debug("Fail {0} due to: {1}", Self, cause);
+            _inputBunch.Cancel();
+            if (closeTransport)
+            {
+                Log.Debug("Closing output");
+                _outputBunch.Error(TransportOut, cause);
+            }
+
+            _outputBunch.Error(UserOut, cause);
+            Pump();
         }
 
         #region IPump impl
 
         public TransferState TransferState { get; set; }
         public Action CurrentAction { get; set; }
-        public bool IsPumpFinished { get; }
-        public void InitialPhase(int waitForUpstream, TransferPhase andThen)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void WaitForUpstream(int waitForUpstream)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void GotUpstreamSubscription()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void NextPhase(TransferPhase phase)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Pump()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void PumpFailed(Exception e)
-        {
-            throw new NotImplementedException();
-        }
-
+        public bool IsPumpFinished => this.IsPumpFinished();
+        public void InitialPhase(int waitForUpstream, TransferPhase andThen) => Pumps.InitialPhase(this, waitForUpstream, andThen);
+        public void WaitForUpstream(int waitForUpstream) => Pumps.WaitForUpstream(this, waitForUpstream);
+        public void GotUpstreamSubscription() => Pumps.GotUpstreamSubscription(this);
+        public void NextPhase(TransferPhase phase) => Pumps.NextPhase(this, phase);
+        public void Pump() => Pumps.Pump(this);
+        public void PumpFailed(Exception e) => Fail(e);
         public void PumpFinished()
         {
-            throw new NotImplementedException();
+            _inputBunch.Cancel();
+            _outputBunch.Complete();
+            if (_tracing) Log.Debug("STOP Outbound Closed: {0} Inbound Closed: {1}", _sslStream.CanWrite, _sslStream.CanRead);
+            Context.Stop(Self);
         }
 
         #endregion
