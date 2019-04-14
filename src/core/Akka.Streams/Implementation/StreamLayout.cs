@@ -31,6 +31,15 @@ namespace Akka.Streams.Implementation
         /// </summary>
         public static readonly bool IsDebug = false;
 
+        /// <summary>
+        /// This is the only extension point for the sealed type hierarchy: composition
+        /// (i.e. the module tree) is managed strictly within this file, only leaf nodes
+        /// may be declared elsewhere.
+        /// </summary>
+        internal interface IAtomicModule<out TShape, out TMat> : IGraph<TShape, TMat> where TShape: Shape
+        {
+        }
+
         #region Materialized Value Node types
 
         /// <summary>
